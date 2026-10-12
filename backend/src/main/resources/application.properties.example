@@ -1,0 +1,15 @@
+spring.application.name=backend
+server.port=8080
+
+# Kết nối PostgreSQL: copy file này thành application.properties rồi sửa 3 giá trị viết hoa
+spring.datasource.url=jdbc:postgresql://localhost:5432/TEN_DATABASE
+spring.datasource.username=postgres
+spring.datasource.password=MAT_KHAU
+
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.open-in-view=false
+spring.jpa.show-sql=true
+
+# Cấu hình JWT: khóa phải dài ít nhất 32 ký tự, hãy đổi thành chuỗi ngẫu nhiên của bạn
+app.jwt.secret=DOI_THANH_CHUOI_NGAU_NHIEN_DAI_IT_NHAT_32_KY_TU
+app.jwt.expiration-minutes=60
