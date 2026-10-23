@@ -63,6 +63,12 @@ class TokenStorage @Inject constructor(
         }
     }
 
+    suspend fun updateFullName(fullName: String) {
+        context.sessionDataStore.edit { prefs ->
+            prefs[Keys.FULL_NAME] = fullName
+        }
+    }
+
     suspend fun clear() {
         context.sessionDataStore.edit { it.clear() }
     }

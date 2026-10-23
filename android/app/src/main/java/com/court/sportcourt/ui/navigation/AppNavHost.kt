@@ -15,11 +15,13 @@ import androidx.navigation.compose.rememberNavController
 import com.court.sportcourt.ui.auth.LoginScreen
 import com.court.sportcourt.ui.auth.RegisterScreen
 import com.court.sportcourt.ui.home.HomeScreen
+import com.court.sportcourt.ui.profile.ProfileScreen
 
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val HOME = "home"
+    const val PROFILE = "profile"
 }
 
 @Composable
@@ -69,6 +71,17 @@ private fun AppNavGraph(startDestination: String) {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Routes.PROFILE)
+                }
+            )
+        }
+
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

@@ -1,11 +1,16 @@
 package com.court.sportcourt.di
 
+import com.court.sportcourt.data.local.TokenStorage
 import com.court.sportcourt.data.remote.AuthApi
+import com.court.sportcourt.data.remote.UserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -30,8 +35,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        // Mức BASIC chỉ ghi địa chỉ và mã trạng thái, không ghi nội dung (tránh lộ mật khẩu)
+    fun provideOkHttpClient(tokenStorage: TokenStorage): OkHttpClient {
+        val authInterceptor = Interceptor { chain ->
+            val token = runBlocking { tokenStorage.session.firstOrNull()?.accessToken }
+            val request = if (!token.isNullOrBlank()) {
+                chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
+            } else {
+                chain.request()
+            }
+            chain.proceed(request)
+        }
+
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
             redactHeader("Authorization")
@@ -40,6 +56,7 @@ object NetworkModule {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)
+            .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .build()
     }
@@ -57,4 +74,9 @@ object NetworkModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi =
         retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): UserApi =
+        retrofit.create(UserApi::class.java)
 }
