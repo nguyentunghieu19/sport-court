@@ -1,0 +1,12 @@
+# Backend application properties containing credentials & secrets
+**/application.properties
+!**/application.properties.example
+
+# IDE and editor files
+.idea/
+*.iml
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
