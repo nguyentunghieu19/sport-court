@@ -23,7 +23,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // 10.0.2.2 là địa chỉ máy tính nhìn từ máy ảo Android http://10.0.2.2:8080/
+    // Dùng http://127.0.0.1:8080/ kết hợp lệnh "adb reverse tcp:8080 tcp:8080" để kết nối trực tiếp
     private const val BASE_URL = "http://127.0.0.1:8080/"
 
     @Provides

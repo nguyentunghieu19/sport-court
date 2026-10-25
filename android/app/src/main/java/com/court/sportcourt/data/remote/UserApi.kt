@@ -6,6 +6,7 @@ import com.court.sportcourt.data.remote.dto.UserProfileResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.PUT
 
 interface UserApi {
@@ -16,6 +17,6 @@ interface UserApi {
     @PUT("api/users/me")
     suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<UserProfileResponse>
 
-    @PUT("api/users/me/password")
+    @POST("api/users/me/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
 }

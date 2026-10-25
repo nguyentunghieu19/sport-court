@@ -20,6 +20,6 @@ data class UpdateProfileRequest(
 
 @Serializable
 data class ChangePasswordRequest(
-    val oldPassword: String,
+    val currentPassword: String,
     val newPassword: String
 )

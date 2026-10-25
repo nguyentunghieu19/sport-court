@@ -50,7 +50,7 @@ class UserRepository @Inject constructor(
     ): ApiResult<Unit> = handleUnit {
         userApi.changePassword(
             ChangePasswordRequest(
-                oldPassword = oldPassword,
+                currentPassword = oldPassword,
                 newPassword = newPassword
             )
         )
