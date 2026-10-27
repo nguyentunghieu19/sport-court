@@ -576,7 +576,9 @@ private fun VenueCard(
         NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
     }
     val formattedPrice = remember(venue.minBasePrice) {
-        currencyFormatter.format(venue.minBasePrice)
+        venue.minBasePrice?.takeIf { it > 0 }?.let {
+            currencyFormatter.format(it)
+        }
     }
 
     Card(
@@ -604,7 +606,7 @@ private fun VenueCard(
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        text = "Quận: ${venue.district}",
+                        text = "Quận: ${venue.district ?: ""}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -658,7 +660,7 @@ private fun VenueCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Giá từ: $formattedPrice/giờ",
+                    text = if (formattedPrice != null) "Giá từ: $formattedPrice/giờ" else "Giá từ: Chưa có sân",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

@@ -122,7 +122,7 @@ fun VenueDetailScreen(
                         Spacer(Modifier.height(8.dp))
 
                         Text(
-                            text = "📍 Địa chỉ: ${venue.address}, ${venue.district}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
+                            text = "📍 Địa chỉ: ${venue.address}, ${venue.district ?: ""}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
                             style = MaterialTheme.typography.bodyMedium
                         )
 
@@ -188,27 +188,34 @@ fun VenueDetailScreen(
 
                         Spacer(Modifier.height(8.dp))
 
-                        Text(
-                            text = "💳 Chính sách đặt cọc:",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = venue.depositPolicy ?: "Đặt cọc theo quy định của quản lý sân.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        val policy = venue.policy
+                        if (policy != null) {
+                            Text(
+                                text = "💳 Đặt cọc ${policy.depositPercentage.toInt()}%" +
+                                        if (policy.depositRefundableOnCustomerCancel) " (Hoàn cọc khi hủy trước hạn)" else "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
 
-                        Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(6.dp))
 
-                        Text(
-                            text = "❌ Chính sách hủy sân:",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = venue.cancellationPolicy ?: "Vui lòng liên hệ trực tiếp chủ sân trước 24 giờ để hủy.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                            Text(
+                                text = "❌ Hủy miễn phí trước ${policy.cancellationDeadlineHours} giờ" +
+                                        if (policy.fullPaymentRefundableBeforeDeadline) " (Hoàn 100% tiền)" else "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            Text(
+                                text = "⏱️ Giữ chỗ ${policy.paymentTimeoutMinutes} phút",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        } else {
+                            Text(
+                                text = "Áp dụng theo quy định chung của nhà quản lý sân.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
 
