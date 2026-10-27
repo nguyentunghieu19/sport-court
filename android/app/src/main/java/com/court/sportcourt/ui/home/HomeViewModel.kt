@@ -3,8 +3,14 @@ package com.court.sportcourt.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.court.sportcourt.data.local.UserSession
+import com.court.sportcourt.data.remote.dto.SportTypeDto
+import com.court.sportcourt.data.remote.dto.VenueResponse
+import com.court.sportcourt.data.repository.ApiResult
 import com.court.sportcourt.data.repository.AuthRepository
+import com.court.sportcourt.data.repository.VenueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,24 +23,6 @@ import javax.inject.Inject
 enum class HomeTab {
     HOME, BOOKINGS, NOTIFICATIONS, PROFILE
 }
-
-data class SportCategory(
-    val id: String,
-    val name: String,
-    val iconEmoji: String
-)
-
-data class SportCourtItem(
-    val id: Long,
-    val name: String,
-    val categoryId: String,
-    val categoryName: String,
-    val address: String,
-    val pricePerHour: String,
-    val rating: Double,
-    val reviewCount: Int,
-    val isAvailable: Boolean = true
-)
 
 data class BookingItem(
     val id: Long,
@@ -56,151 +44,167 @@ data class NotificationItem(
 
 data class HomeUiState(
     val currentTab: HomeTab = HomeTab.HOME,
-    val selectedCategoryId: String = "all",
     val searchQuery: String = "",
-    val categories: List<SportCategory> = listOf(
-        SportCategory("all", "Tất cả", "🏆"),
-        SportCategory("football", "Bóng đá", "⚽"),
-        SportCategory("badminton", "Cầu lông", "🏸"),
-        SportCategory("tennis", "Tennis", "🎾"),
-        SportCategory("basketball", "Bóng rổ", "🏀"),
-        SportCategory("pickleball", "Pickleball", "🏓")
-    ),
-    val filteredCourts: List<SportCourtItem> = emptyList(),
-    val mockBookings: List<BookingItem> = listOf(
-        BookingItem(
-            id = 101,
-            courtName = "Sân Bóng Đá Chảo Lửa",
-            categoryName = "Bóng đá",
-            date = "Hôm nay",
-            timeSlot = "18:00 - 19:30",
-            price = "250.000đ",
-            status = "Đã xác nhận"
-        ),
-        BookingItem(
-            id = 102,
-            courtName = "CLB Cầu Lông Viettel",
-            categoryName = "Cầu lông",
-            date = "Ngày mai",
-            timeSlot = "19:00 - 21:00",
-            price = "240.000đ",
-            status = "Chờ thanh toán"
-        )
-    ),
-    val mockNotifications: List<NotificationItem> = listOf(
-        NotificationItem(
-            id = 1,
-            title = "Đặt sân thành công! 🎉",
-            message = "Sân Bóng Đá Chảo Lửa đã được xác nhận lịch chơi từ 18:00 - 19:30.",
-            time = "10 phút trước",
-            isUnread = true
-        ),
-        NotificationItem(
-            id = 2,
-            title = "Nhắc nhở lịch chơi ⏰",
-            message = "Bạn có lịch đặt sân cầu lông vào ngày mai lúc 19:00. Vui lòng đến trước 15 phút.",
-            time = "2 giờ trước",
-            isUnread = true
-        )
-    ),
+    val selectedCity: String? = null,
+    val selectedDistrict: String? = null,
+    val selectedSportCode: String? = null,
+    val sportTypes: List<SportTypeDto> = emptyList(),
+    val showFilterSheet: Boolean = false,
+    val venues: List<VenueResponse> = emptyList(),
+    val page: Int = 0,
+    val isLastPage: Boolean = false,
+    val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val mockBookings: List<BookingItem> = emptyList(),
+    val mockNotifications: List<NotificationItem> = emptyList(),
     val snackbarMessage: String? = null
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val venueRepository: VenueRepository
 ) : ViewModel() {
 
     val session: StateFlow<UserSession?> = authRepository.session
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val allCourts = listOf(
-        SportCourtItem(
-            id = 1,
-            name = "Sân Bóng Đá Chảo Lửa",
-            categoryId = "football",
-            categoryName = "Bóng đá",
-            address = "30 Phan Thúc Duyện, Tân Bình, TP.HCM",
-            pricePerHour = "250.000đ/giờ",
-            rating = 4.8,
-            reviewCount = 128
-        ),
-        SportCourtItem(
-            id = 2,
-            name = "CLB Cầu Lông Viettel",
-            categoryId = "badminton",
-            categoryName = "Cầu lông",
-            address = "158 Thành Thái, Quận 10, TP.HCM",
-            pricePerHour = "120.000đ/giờ",
-            rating = 4.9,
-            reviewCount = 215
-        ),
-        SportCourtItem(
-            id = 3,
-            name = "Sân Tennis Kỳ Hòa",
-            categoryId = "tennis",
-            categoryName = "Tennis",
-            address = "238 3 Tháng 2, Quận 10, TP.HCM",
-            pricePerHour = "180.000đ/giờ",
-            rating = 4.7,
-            reviewCount = 89
-        ),
-        SportCourtItem(
-            id = 4,
-            name = "Sân Pickleball Sài Gòn Central",
-            categoryId = "pickleball",
-            categoryName = "Pickleball",
-            address = "12 Nguyễn Hữu Cảnh, Bình Thạnh, TP.HCM",
-            pricePerHour = "150.000đ/giờ",
-            rating = 4.9,
-            reviewCount = 340
-        ),
-        SportCourtItem(
-            id = 5,
-            name = "Sân Bóng Rổ Phú Thọ",
-            categoryId = "basketball",
-            categoryName = "Bóng rổ",
-            address = "219 Lý Thường Kiệt, Quận 11, TP.HCM",
-            pricePerHour = "200.000đ/giờ",
-            rating = 4.6,
-            reviewCount = 76
-        ),
-        SportCourtItem(
-            id = 6,
-            name = "Sân Cầu Lông Celadon",
-            categoryId = "badminton",
-            categoryName = "Cầu lông",
-            address = "36 Tân Thắng, Tân Phú, TP.HCM",
-            pricePerHour = "110.000đ/giờ",
-            rating = 4.8,
-            reviewCount = 94
-        )
-    )
-
-    private val _uiState = MutableStateFlow(HomeUiState(filteredCourts = allCourts))
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private var searchJob: Job? = null
+
+    init {
+        loadSportTypes()
+        loadVenues(page = 0, isInitial = true)
+    }
+
+    private fun loadSportTypes() {
+        viewModelScope.launch {
+            when (val result = venueRepository.getSportTypes()) {
+                is ApiResult.Success -> {
+                    _uiState.update { it.copy(sportTypes = result.data) }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            sportTypes = listOf(
+                                SportTypeDto("FOOTBALL", "Bóng đá"),
+                                SportTypeDto("BADMINTON", "Cầu lông"),
+                                SportTypeDto("TENNIS", "Tennis"),
+                                SportTypeDto("BASKETBALL", "Bóng rổ"),
+                                SportTypeDto("PICKLEBALL", "Pickleball")
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun selectTab(tab: HomeTab) {
         _uiState.update { it.copy(currentTab = tab) }
     }
 
-    fun selectCategory(categoryId: String) {
-        _uiState.update { current ->
-            val updated = current.copy(selectedCategoryId = categoryId)
-            updated.copy(filteredCourts = filterCourts(updated.selectedCategoryId, updated.searchQuery))
+    fun toggleFilterSheet(show: Boolean) {
+        _uiState.update { it.copy(showFilterSheet = show) }
+    }
+
+    fun applyFilters(city: String?, district: String?, sportCode: String?) {
+        _uiState.update {
+            it.copy(
+                selectedCity = city?.ifBlank { null },
+                selectedDistrict = district?.ifBlank { null },
+                selectedSportCode = sportCode?.ifBlank { null },
+                showFilterSheet = false
+            )
         }
+        loadVenues(page = 0, isInitial = true)
+    }
+
+    fun clearFilters() {
+        _uiState.update {
+            it.copy(
+                selectedCity = null,
+                selectedDistrict = null,
+                selectedSportCode = null,
+                showFilterSheet = false
+            )
+        }
+        loadVenues(page = 0, isInitial = true)
     }
 
     fun onSearchQueryChange(query: String) {
-        _uiState.update { current ->
-            val updated = current.copy(searchQuery = query)
-            updated.copy(filteredCourts = filterCourts(updated.selectedCategoryId, updated.searchQuery))
+        _uiState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(400)
+            loadVenues(page = 0, isInitial = true)
         }
     }
 
-    fun onBookCourtClick(courtName: String) {
+    fun loadNextPage() {
+        val state = _uiState.value
+        if (state.isLoading || state.isLoadingMore || state.isLastPage) return
+
+        val nextPage = state.page + 1
+        _uiState.update { it.copy(isLoadingMore = true) }
+        loadVenues(page = nextPage, isInitial = false)
+    }
+
+    fun refreshVenues() {
+        loadVenues(page = 0, isInitial = true)
+    }
+
+    private fun loadVenues(page: Int, isInitial: Boolean) {
+        if (isInitial) {
+            _uiState.update { it.copy(isLoading = true, page = 0, isLastPage = false) }
+        }
+
+        viewModelScope.launch {
+            val state = _uiState.value
+            val query = state.searchQuery.ifBlank { null }
+            val result = venueRepository.getPublicVenues(
+                keyword = query,
+                city = state.selectedCity,
+                district = state.selectedDistrict,
+                sportType = state.selectedSportCode,
+                page = page,
+                size = 10
+            )
+
+            when (result) {
+                is ApiResult.Success -> {
+                    val pageResponse = result.data
+                    val newVenues = pageResponse.content
+                    _uiState.update { current ->
+                        val updatedList = if (isInitial) newVenues else current.venues + newVenues
+                        current.copy(
+                            isLoading = false,
+                            isLoadingMore = false,
+                            venues = updatedList,
+                            page = page,
+                            isLastPage = pageResponse.last || newVenues.isEmpty()
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update { current ->
+                        current.copy(
+                            isLoading = false,
+                            isLoadingMore = false,
+                            snackbarMessage = result.message,
+                            isLastPage = true
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onVenueClick(venue: VenueResponse) {
         _uiState.update {
-            it.copy(snackbarMessage = "Tính năng đặt sân cho '$courtName' đang được phát triển!")
+            it.copy(snackbarMessage = "Đang xem địa điểm: ${venue.name}")
         }
     }
 
@@ -212,17 +216,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.logout()
             onDone()
-        }
-    }
-
-    private fun filterCourts(categoryId: String, query: String): List<SportCourtItem> {
-        return allCourts.filter { court ->
-            val matchesCategory = categoryId == "all" || court.categoryId == categoryId
-            val matchesQuery = query.isBlank() ||
-                    court.name.contains(query, ignoreCase = true) ||
-                    court.address.contains(query, ignoreCase = true) ||
-                    court.categoryName.contains(query, ignoreCase = true)
-            matchesCategory && matchesQuery
         }
     }
 }
