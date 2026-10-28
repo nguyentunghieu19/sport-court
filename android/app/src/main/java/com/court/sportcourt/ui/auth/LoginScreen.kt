@@ -58,6 +58,7 @@ import kotlin.math.roundToInt
 fun LoginScreen(
     onLoggedIn: () -> Unit,
     onGoToRegister: () -> Unit,
+    onBackToGuest: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -129,7 +130,7 @@ fun LoginScreen(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // Intro Header Thể thao với Animation
                 Box(
@@ -192,7 +193,7 @@ fun LoginScreen(
                     Text("🏸", fontSize = 16.sp)
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(24.dp))
 
                 // Thẻ Form Đăng Nhập Kiểu Thể Thao Hiện Đại
                 Card(
@@ -290,7 +291,23 @@ fun LoginScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                // Nút Quay về Chế độ Khách (Guest Mode)
+                TextButton(
+                    onClick = onBackToGuest,
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "← Tiếp tục xem sân (Chế độ Khách)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }

@@ -69,7 +69,12 @@ private fun AppNavGraph(
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },
-                onGoToRegister = { navController.navigate(Routes.REGISTER) }
+                onGoToRegister = { navController.navigate(Routes.REGISTER) },
+                onBackToGuest = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
             )
         }
 

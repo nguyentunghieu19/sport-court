@@ -45,7 +45,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -185,7 +184,8 @@ fun HomeScreen(
                     sessionName = session?.fullName,
                     uiState = uiState,
                     onSearchQueryChange = viewModel::onSearchQueryChange,
-                    onLoadNextPage = viewModel::loadNextPage,
+                    onPreviousPage = viewModel::goToPreviousPage,
+                    onNextPage = viewModel::goToNextPage,
                     onOpenFilter = { viewModel.toggleFilterSheet(true) },
                     onClearFilters = viewModel::clearFilters,
                     onVenueClick = { venue ->
@@ -239,26 +239,13 @@ private fun HomeContentView(
     sessionName: String?,
     uiState: HomeUiState,
     onSearchQueryChange: (String) -> Unit,
-    onLoadNextPage: () -> Unit,
+    onPreviousPage: () -> Unit,
+    onNextPage: () -> Unit,
     onOpenFilter: () -> Unit,
     onClearFilters: () -> Unit,
     onVenueClick: (VenueResponse) -> Unit
 ) {
     val listState = rememberLazyListState()
-
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val totalItems = listState.layoutInfo.totalItemsCount
-            val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItemIndex >= totalItems - 2
-        }
-    }
-
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
-            onLoadNextPage()
-        }
-    }
 
     LazyColumn(
         state = listState,
@@ -384,7 +371,7 @@ private fun HomeContentView(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "Trang ${uiState.page + 1}",
+                        text = "Trang ${uiState.page + 1} / ${uiState.totalPages}",
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
@@ -437,15 +424,51 @@ private fun HomeContentView(
                 )
             }
 
-            if (uiState.isLoadingMore) {
-                item {
-                    Box(
+            // Thanh điều khiển Phân Trang (Pagination Navigation Controls)
+            item {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+                        OutlinedButton(
+                            onClick = onPreviousPage,
+                            enabled = uiState.page > 0 && !uiState.isLoading,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("◀️ Trang trước", style = MaterialTheme.typography.labelLarge)
+                        }
+
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Trang ${uiState.page + 1} / ${uiState.totalPages}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = onNextPage,
+                            enabled = uiState.page < uiState.totalPages - 1 && !uiState.isLoading,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Trang sau ▶️", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -457,6 +480,7 @@ private fun HomeContentView(
     }
 }
 
+// Màn hình 2: Component ModalBottomSheet Bộ Lọc Thể Thao Đơn Giản & Đẹp
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun FilterBottomSheet(
@@ -473,28 +497,31 @@ private fun FilterBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Bộ lọc địa điểm sân",
+                text = "⚙️ Bộ lọc địa điểm sân",
                 style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(18.dp))
+
+            // 1. Môn thể thao
+            Text(
+                text = "Môn thể thao",
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = "Môn thể thao (Hiển thị nhãn, gửi bằng mã code)",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -503,26 +530,46 @@ private fun FilterBottomSheet(
                 FilterChip(
                     selected = tempSportCode == null,
                     onClick = { tempSportCode = null },
-                    label = { Text("Tất cả môn") }
+                    label = { Text("Tất cả môn") },
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 uiState.sportTypes.forEach { sport ->
+                    val sportIcon = when (sport.code) {
+                        "FOOTBALL" -> "⚽ "
+                        "BADMINTON" -> "🏸 "
+                        "TENNIS" -> "🎾 "
+                        "PICKLEBALL" -> "🏓 "
+                        "BASKETBALL" -> "🏀 "
+                        else -> "🏆 "
+                    }
                     FilterChip(
                         selected = tempSportCode == sport.code,
                         onClick = { tempSportCode = if (tempSportCode == sport.code) null else sport.code },
-                        label = { Text(sport.label) }
+                        label = { Text("$sportIcon${sport.label}") },
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
+
+            // 2. Khu vực
+            Text(
+                text = "Khu vực",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(10.dp))
 
             OutlinedTextField(
                 value = tempCity,
                 onValueChange = { tempCity = it },
-                label = { Text("Thành phố (ví dụ: TP.HCM, Hà Nội)") },
+                label = { Text("Thành phố") },
+                placeholder = { Text("Ví dụ: Hà Nội, TP.HCM...") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(Modifier.height(12.dp))
@@ -530,12 +577,14 @@ private fun FilterBottomSheet(
             OutlinedTextField(
                 value = tempDistrict,
                 onValueChange = { tempDistrict = it },
-                label = { Text("Quận / Huyện (ví dụ: Tân Bình, Quận 10)") },
+                label = { Text("Quận / Huyện") },
+                placeholder = { Text("Ví dụ: Cầu Giấy, Tây Hồ...") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(28.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -546,22 +595,28 @@ private fun FilterBottomSheet(
                         onReset()
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Đặt lại")
+                    Text("Đặt lại", fontWeight = FontWeight.SemiBold)
                 }
 
                 Button(
                     onClick = {
                         onApply(tempCity, tempDistrict, tempSportCode)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Áp dụng")
+                    Text("Áp dụng", fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

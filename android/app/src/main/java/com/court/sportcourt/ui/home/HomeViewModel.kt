@@ -52,6 +52,8 @@ data class HomeUiState(
     val showFilterSheet: Boolean = false,
     val venues: List<VenueResponse> = emptyList(),
     val page: Int = 0,
+    val totalPages: Int = 1,
+    val totalElements: Long = 0,
     val isLastPage: Boolean = false,
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -143,13 +145,24 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun loadNextPage() {
+    fun goToPage(targetPage: Int) {
         val state = _uiState.value
-        if (state.isLoading || state.isLoadingMore || state.isLastPage) return
+        if (state.isLoading || targetPage < 0 || targetPage >= state.totalPages) return
+        loadVenues(page = targetPage, isInitial = true)
+    }
 
-        val nextPage = state.page + 1
-        _uiState.update { it.copy(isLoadingMore = true) }
-        loadVenues(page = nextPage, isInitial = false)
+    fun goToNextPage() {
+        val state = _uiState.value
+        if (state.page < state.totalPages - 1) {
+            goToPage(state.page + 1)
+        }
+    }
+
+    fun goToPreviousPage() {
+        val state = _uiState.value
+        if (state.page > 0) {
+            goToPage(state.page - 1)
+        }
     }
 
     fun refreshVenues() {
@@ -158,7 +171,7 @@ class HomeViewModel @Inject constructor(
 
     private fun loadVenues(page: Int, isInitial: Boolean) {
         if (isInitial) {
-            _uiState.update { it.copy(isLoading = true, page = 0, isLastPage = false) }
+            _uiState.update { it.copy(isLoading = true, isLastPage = false) }
         }
 
         viewModelScope.launch {
@@ -176,15 +189,15 @@ class HomeViewModel @Inject constructor(
             when (result) {
                 is ApiResult.Success -> {
                     val pageResponse = result.data
-                    val newVenues = pageResponse.content
                     _uiState.update { current ->
-                        val updatedList = if (isInitial) newVenues else current.venues + newVenues
                         current.copy(
                             isLoading = false,
                             isLoadingMore = false,
-                            venues = updatedList,
-                            page = page,
-                            isLastPage = pageResponse.last || newVenues.isEmpty()
+                            venues = pageResponse.content,
+                            page = pageResponse.page,
+                            totalPages = if (pageResponse.totalPages > 0) pageResponse.totalPages else 1,
+                            totalElements = pageResponse.totalElements,
+                            isLastPage = pageResponse.last || pageResponse.content.isEmpty()
                         )
                     }
                 }

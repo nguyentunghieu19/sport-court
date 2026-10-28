@@ -20,8 +20,14 @@ class UserRepository @Inject constructor(
     private val json: Json
 ) {
 
-    suspend fun getProfile(): ApiResult<UserProfileResponse> = handle {
-        userApi.getProfile()
+    suspend fun getProfile(): ApiResult<UserProfileResponse> {
+        val result = handle {
+            userApi.getProfile()
+        }
+        if (result is ApiResult.Success) {
+            tokenStorage.updateFullName(result.data.fullName)
+        }
+        return result
     }
 
     suspend fun updateProfile(
