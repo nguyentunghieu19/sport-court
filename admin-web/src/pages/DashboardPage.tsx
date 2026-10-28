@@ -19,6 +19,28 @@ const SPORT_OPTIONS: SportFilterOption[] = [
   { key: "TENNIS", label: "Tennis" },
 ];
 
+async function loadFieldsByVenue(
+  venues: VenueResponse[],
+): Promise<{
+  fieldsByVenue: Record<number, FieldResponse[] | null>;
+  hasErrors: boolean;
+}> {
+  const entries = await Promise.all(
+    venues.map(async (venue) => {
+      try {
+        return [venue.id, await venueService.getVenueFields(venue.id)] as const;
+      } catch {
+        return [venue.id, null] as const;
+      }
+    }),
+  );
+
+  return {
+    fieldsByVenue: Object.fromEntries(entries),
+    hasErrors: entries.some(([, fields]) => fields === null),
+  };
+}
+
 /**
  * Trang Chủ & Tìm kiếm (DashboardPage)
  *
@@ -33,6 +55,10 @@ const SPORT_OPTIONS: SportFilterOption[] = [
  */
 export function DashboardPage() {
   const [venues, setVenues] = useState<VenueResponse[]>([]);
+  const [fieldsByVenue, setFieldsByVenue] = useState<
+    Record<number, FieldResponse[] | null>
+  >({});
+  const [fieldIndexError, setFieldIndexError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +79,10 @@ export function DashboardPage() {
       setLoading(true);
       setError(null);
       const data = await venueService.getMyVenues();
+      const fieldIndex = await loadFieldsByVenue(data);
       setVenues(data);
+      setFieldsByVenue(fieldIndex.fieldsByVenue);
+      setFieldIndexError(fieldIndex.hasErrors);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -66,8 +95,11 @@ export function DashboardPage() {
     async function loadInitial() {
       try {
         const data = await venueService.getMyVenues();
+        const fieldIndex = await loadFieldsByVenue(data);
         if (!ignore) {
           setVenues(data);
+          setFieldsByVenue(fieldIndex.fieldsByVenue);
+          setFieldIndexError(fieldIndex.hasErrors);
           setLoading(false);
         }
       } catch (err) {
@@ -112,23 +144,26 @@ export function DashboardPage() {
         (venue.city && venue.city.toLowerCase().includes(query)) ||
         (venue.address && venue.address.toLowerCase().includes(query));
 
-      // Lọc môn thể thao: nếu chọn ALL thì lấy hết, nếu chọn môn cụ thể thì kiểm tra trong mô tả hoặc tên
-      let matchSport = true;
-      if (selectedSport !== "ALL") {
-        const sportKeyword = {
-          BADMINTON: "cầu lông",
-          PICKLEBALL: "pickleball",
-          FOOTBALL: "bóng đá",
-          TENNIS: "tennis",
-        }[selectedSport];
-
-        const textToSearch = `${venue.name} ${venue.description || ""}`.toLowerCase();
-        matchSport = textToSearch.includes(sportKeyword);
-      }
+      // Lọc theo loại sân con thực tế, không dò từ khóa trong tên/mô tả địa điểm.
+      const matchSport =
+        selectedSport === "ALL" ||
+        (fieldsByVenue[venue.id]?.some(
+          (field) => field.sportType.toUpperCase() === selectedSport,
+        ) ?? false);
 
       return matchQuery && matchSport;
     });
-  }, [venues, submittedQuery, selectedSport]);
+  }, [venues, fieldsByVenue, submittedQuery, selectedSport]);
+
+  const filteredVenueFields = useMemo(
+    () =>
+      selectedSport === "ALL"
+        ? venueFields
+        : venueFields.filter(
+            (field) => field.sportType.toUpperCase() === selectedSport,
+          ),
+    [selectedSport, venueFields],
+  );
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,11 +236,13 @@ export function DashboardPage() {
                   key={sport.key}
                   type="button"
                   onClick={() => setSelectedSport(sport.key)}
+                  aria-pressed={isSelected}
+                  disabled={loading}
                   className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
                     isSelected
                       ? "bg-green-600 text-white shadow-xs"
                       : "border border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50"
-                  }`}
+                  } disabled:cursor-wait disabled:opacity-60`}
                 >
                   {isSelected && sport.key === "ALL" ? "(x) " : ""}
                   {sport.label}
@@ -213,6 +250,15 @@ export function DashboardPage() {
               );
             })}
           </div>
+          <p className="mt-2 text-[11px] text-gray-500">
+            Chọn môn thể thao để xem các cụm sân có sân thuộc môn đó.
+          </p>
+          {fieldIndexError && selectedSport !== "ALL" && (
+            <p role="status" className="mt-2 text-xs text-amber-700">
+              Một số cụm sân chưa tải được danh sách sân nên có thể chưa xuất
+              hiện trong kết quả lọc. Hãy thử làm mới dữ liệu.
+            </p>
+          )}
         </div>
       </div>
 
@@ -378,7 +424,7 @@ export function DashboardPage() {
               {/* Danh sách sân con trực thuộc địa điểm */}
               <div className="border-t border-gray-100 pt-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                  Danh sách sân thi đấu ({venueFields.length} sân)
+                  Danh sách sân thi đấu ({filteredVenueFields.length} sân)
                 </h4>
 
                 {loadingFields && (
@@ -391,15 +437,21 @@ export function DashboardPage() {
                   <p className="mt-2 text-xs text-red-600">{fieldError}</p>
                 )}
 
-                {!loadingFields && !fieldError && venueFields.length === 0 && (
+                {!loadingFields && !fieldError && selectedSport === "ALL" && venueFields.length === 0 && (
                   <p className="mt-3 text-center text-xs text-gray-500">
                     Cụm sân này hiện chưa thiết lập danh sách sân con.
                   </p>
                 )}
 
-                {!loadingFields && venueFields.length > 0 && (
+                {!loadingFields && !fieldError && selectedSport !== "ALL" && filteredVenueFields.length === 0 && (
+                  <p className="mt-3 text-center text-xs text-gray-500">
+                    Cụm sân này không có sân thuộc môn {SPORT_OPTIONS.find((sport) => sport.key === selectedSport)?.label}.
+                  </p>
+                )}
+
+                {!loadingFields && !fieldError && filteredVenueFields.length > 0 && (
                   <div className="mt-3 max-h-64 space-y-2.5 overflow-y-auto pr-1">
-                    {venueFields.map((field) => (
+                    {filteredVenueFields.map((field) => (
                       <div
                         key={field.id}
                         className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 p-3.5"
