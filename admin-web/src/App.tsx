@@ -7,14 +7,14 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { VenuesPage } from "./pages/VenuesPage";
 import { VenueEditPage } from "./pages/VenueEditPage";
 import { FieldEditPage } from "./pages/FieldEditPage";
+import { FieldPriceRulesPage } from "./pages/FieldPriceRulesPage";
+import { FieldAvailabilityPage } from "./pages/FieldAvailabilityPage";
 
 function App() {
   return (
     <Routes>
-      {/* Route công khai */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Tuyến đường được bảo vệ qua khối RequireAuth */}
       <Route element={<RequireAuth />}>
         <Route element={<AdminLayout />}>
           <Route index element={<DashboardPage />} />
@@ -23,11 +23,21 @@ function App() {
           <Route path="venues/:id" element={<VenueEditPage />} />
           <Route path="venues/:id/edit" element={<VenueEditPage />} />
           <Route path="venues/:venueId/fields/new" element={<FieldEditPage />} />
-          <Route path="venues/:venueId/fields/:fieldId/edit" element={<FieldEditPage />} />
+          <Route
+            path="venues/:venueId/fields/:fieldId/edit"
+            element={<FieldEditPage />}
+          />
+          <Route
+            path="venues/:venueId/fields/:fieldId/price-rules"
+            element={<FieldPriceRulesPage />}
+          />
+          <Route
+            path="venues/:venueId/fields/:fieldId/availability"
+            element={<FieldAvailabilityPage />}
+          />
         </Route>
       </Route>
 
-      {/* Điều hướng mặc định */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

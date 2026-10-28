@@ -368,7 +368,6 @@ export function VenuesPage() {
 
                   {/* Nút hành động */}
                   <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-                    <span className="text-[11px] text-gray-400">Mã địa điểm: #{venue.id}</span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"

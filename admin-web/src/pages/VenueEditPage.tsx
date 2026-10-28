@@ -349,7 +349,6 @@ export function VenueEditPage() {
           </svg>
           Quay lại danh sách địa điểm
         </Link>
-        <span className="text-[11px] text-gray-400">ID #{venue.id}</span>
       </div>
 
       {/* ── HEADER CỤM SÂN & TRẠNG THÁI ── */}
@@ -840,10 +839,19 @@ export function VenueEditPage() {
                     </div>
 
                     <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-                      <div className="text-[11px] text-gray-400">
-                        Mã sân: #{field.id}
-                      </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          to={`/venues/${venue.id}/fields/${field.id}/price-rules`}
+                          className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                        >
+                          Bảng giá
+                        </Link>
+                        <Link
+                          to={`/venues/${venue.id}/fields/${field.id}/availability`}
+                          className="inline-flex items-center rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 transition hover:bg-purple-100"
+                        >
+                          Xem lịch
+                        </Link>
                         <button
                           type="button"
                           onClick={() => {

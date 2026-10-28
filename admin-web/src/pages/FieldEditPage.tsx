@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useOutletContext, useParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
 import type {
@@ -52,6 +52,13 @@ interface FieldFormData {
   description?: string;
 }
 
+type PageBreadcrumbContext = {
+  setPageBreadcrumbs: (breadcrumbs: {
+    pathname: string;
+    items: { label: string; to?: string }[];
+  } | null) => void;
+};
+
 /**
  * Trang Thêm sân / Sửa sân / Đổi trạng thái sân (FieldEditPage)
  *
@@ -63,6 +70,8 @@ interface FieldFormData {
  *   - PATCH /api/owner/venues/{venueId}/fields/{id}/status   → Đổi trạng thái (hoạt động, ngừng hđ, bảo trì)
  */
 export function FieldEditPage() {
+  const { setPageBreadcrumbs } =
+    useOutletContext<PageBreadcrumbContext>();
   const { venueId: paramVenueId, fieldId: paramFieldId } = useParams<{
     venueId: string;
     fieldId?: string;
@@ -153,6 +162,30 @@ export function FieldEditPage() {
       ignore = true;
     };
   }, [venueId, fieldId, isEditMode, reset]);
+
+  useEffect(() => {
+    if (!venue) return;
+
+    setPageBreadcrumbs({
+      pathname: isEditMode
+        ? `/venues/${venueId}/fields/${fieldId}/edit`
+        : `/venues/${venueId}/fields/new`,
+      items: [
+        { label: "Địa điểm", to: "/venues" },
+        { label: venue.name, to: `/venues/${venueId}?tab=fields` },
+        {
+          label:
+            isEditMode && field
+              ? `Sửa sân ${field.name}`
+              : isEditMode
+                ? "Sửa sân"
+                : "Thêm sân",
+        },
+      ],
+    });
+
+    return () => setPageBreadcrumbs(null);
+  }, [field, fieldId, isEditMode, setPageBreadcrumbs, venue, venueId]);
 
   // Submit Lưu (Thêm sân POST hoặc Sửa sân PUT)
   const onSubmitForm = async (values: FieldFormData) => {
@@ -252,7 +285,6 @@ export function FieldEditPage() {
           </svg>
           Quay lại: {venue?.name ?? "Địa điểm"}
         </Link>
-        {isEditMode && <span className="text-[11px] text-gray-400">Mã sân #{fieldId}</span>}
       </div>
 
       {/* ── HEADER TIÊU ĐỀ ── */}
