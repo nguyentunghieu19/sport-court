@@ -13,3 +13,10 @@ spring.jpa.show-sql=true
 # Cấu hình JWT: khóa phải dài ít nhất 32 ký tự, hãy đổi thành chuỗi ngẫu nhiên của bạn
 app.jwt.secret=DOI_THANH_CHUOI_NGAU_NHIEN_DAI_IT_NHAT_32_KY_TU
 app.jwt.expiration-minutes=60
+
+
+# Cấu hình VNPay sandbox: lấy TmnCode và HashSecret từ email đăng ký sandbox của VNPay
+app.vnpay.tmn-code=MA_TMN_CODE_CUA_BAN
+app.vnpay.hash-secret=HASH_SECRET_CUA_BAN
+app.vnpay.pay-url=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+app.vnpay.return-url=http://localhost:8080/api/public/payments/vnpay/return

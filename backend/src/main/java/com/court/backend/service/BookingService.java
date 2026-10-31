@@ -21,6 +21,9 @@ import com.court.backend.repository.FieldBlockRepository;
 import com.court.backend.repository.FieldPriceRuleRepository;
 import com.court.backend.repository.SportsFieldRepository;
 import com.court.backend.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -58,6 +61,9 @@ public class BookingService {
     private static final DateTimeFormatter CODE_DATE = DateTimeFormatter.ofPattern("yyMMdd");
 
     private final SecureRandom random = new SecureRandom();
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
@@ -171,15 +177,24 @@ public class BookingService {
     @Transactional
     public int releaseExpiredBookings() {
         Instant now = Instant.now();
-        List<Booking> expired = bookingRepository
+        List<Booking> candidates = bookingRepository
                 .findByStatusAndExpiresAtBefore(BookingStatus.PENDING_PAYMENT, now);
-        for (Booking booking : expired) {
-            booking.setStatus(BookingStatus.CANCELLED);
-            booking.setCancelledAt(now);
-            booking.setCancellationReason("Hết hạn thanh toán");
+
+        int released = 0;
+        for (Booking booking : candidates) {
+            // Khóa dòng và đọc lại trạng thái mới nhất: không ghi đè lên đơn vừa được thanh toán xong
+            entityManager.refresh(booking, LockModeType.PESSIMISTIC_WRITE);
+            if (booking.getStatus() == BookingStatus.PENDING_PAYMENT
+                    && booking.getExpiresAt() != null
+                    && booking.getExpiresAt().isBefore(now)) {
+                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setCancelledAt(now);
+                booking.setCancellationReason("Hết hạn thanh toán");
+                released++;
+            }
         }
-        bookingRepository.saveAllAndFlush(expired);
-        return expired.size();
+        bookingRepository.flush();
+        return released;
     }
 
     private User getActiveCustomer(Long userId) {

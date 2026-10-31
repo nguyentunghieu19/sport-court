@@ -129,7 +129,9 @@ export function AdminLayout() {
           label: "Sân",
           to: `/venues/${fieldPageMatch[1]}/fields/${fieldPageMatch[2]}/edit`,
         },
-        { label: fieldPageMatch[3] === "price-rules" ? "Bảng giá" : "Lịch sân" },
+        {
+          label: fieldPageMatch[3] === "price-rules" ? "Bảng giá" : "Lịch sân",
+        },
       ]
     : [];
   const defaultEditorBreadcrumbs: BreadcrumbItem[] = fieldEditorMatch
@@ -313,9 +315,7 @@ export function AdminLayout() {
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
                 <span
-                  className={
-                    "flex-1 " + (sidebarCollapsed ? "md:hidden" : "")
-                  }
+                  className={"flex-1 " + (sidebarCollapsed ? "md:hidden" : "")}
                 >
                   Lịch đặt
                 </span>
@@ -350,9 +350,7 @@ export function AdminLayout() {
                   <path d="M10 21h4" />
                 </svg>
                 <span
-                  className={
-                    "flex-1 " + (sidebarCollapsed ? "md:hidden" : "")
-                  }
+                  className={"flex-1 " + (sidebarCollapsed ? "md:hidden" : "")}
                 >
                   Thông báo
                 </span>
@@ -462,7 +460,10 @@ export function AdminLayout() {
                         {item.label}
                       </Link>
                     ) : (
-                      <span aria-current="page" className="font-semibold text-gray-800">
+                      <span
+                        aria-current="page"
+                        className="font-semibold text-gray-800"
+                      >
                         {item.label}
                       </span>
                     )}
