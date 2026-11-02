@@ -33,12 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.court.sportcourt.ui.components.AppBottomNavigationBar
+import com.court.sportcourt.ui.components.NavigationTab
 import com.court.sportcourt.ui.components.PasswordTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
+    onTabSelected: (NavigationTab) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -64,6 +67,12 @@ fun ProfileScreen(
                         Text("← Quay lại")
                     }
                 }
+            )
+        },
+        bottomBar = {
+            AppBottomNavigationBar(
+                currentTab = NavigationTab.PROFILE,
+                onTabSelected = onTabSelected
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

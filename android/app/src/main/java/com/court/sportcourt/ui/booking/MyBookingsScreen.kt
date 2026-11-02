@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.court.sportcourt.data.remote.dto.BookingResponse
+import com.court.sportcourt.ui.components.AppBottomNavigationBar
+import com.court.sportcourt.ui.components.NavigationTab
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -47,6 +49,8 @@ import java.util.Locale
 fun MyBookingsScreen(
     onBack: () -> Unit,
     onBookingClick: (Long) -> Unit,
+    onNavigateToMyPayments: () -> Unit = {},
+    onTabSelected: (NavigationTab) -> Unit = {},
     viewModel: MyBookingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -60,7 +64,18 @@ fun MyBookingsScreen(
                     TextButton(onClick = onBack) {
                         Text("← Quay lại")
                     }
+                },
+                actions = {
+                    TextButton(onClick = onNavigateToMyPayments) {
+                        Text("📜 Lịch sử GD", fontWeight = FontWeight.Bold)
+                    }
                 }
+            )
+        },
+        bottomBar = {
+            AppBottomNavigationBar(
+                currentTab = NavigationTab.BOOKINGS,
+                onTabSelected = onTabSelected
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

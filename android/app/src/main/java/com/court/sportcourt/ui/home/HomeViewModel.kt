@@ -7,6 +7,7 @@ import com.court.sportcourt.data.remote.dto.SportTypeDto
 import com.court.sportcourt.data.remote.dto.VenueResponse
 import com.court.sportcourt.data.repository.ApiResult
 import com.court.sportcourt.data.repository.AuthRepository
+import com.court.sportcourt.data.repository.BookingRepository
 import com.court.sportcourt.data.repository.VenueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -65,7 +66,8 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val venueRepository: VenueRepository
+    private val venueRepository: VenueRepository,
+    private val bookingRepository: BookingRepository
 ) : ViewModel() {
 
     val session: StateFlow<UserSession?> = authRepository.session
@@ -79,6 +81,7 @@ class HomeViewModel @Inject constructor(
     init {
         loadSportTypes()
         loadVenues(page = 0, isInitial = true)
+        loadUserNotifications()
     }
 
     private fun loadSportTypes() {
@@ -104,8 +107,33 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun loadUserNotifications() {
+        viewModelScope.launch {
+            when (val result = bookingRepository.getMyBookings(page = 0, size = 10)) {
+                is ApiResult.Success -> {
+                    val bookings = result.data.content
+                    val notifications = bookings.mapIndexed { index, booking ->
+                        val isConfirmed = booking.status == "CONFIRMED"
+                        NotificationItem(
+                            id = booking.id,
+                            title = if (isConfirmed) "Thanh toán cọc thành công! 🎉" else "Đơn đặt sân mới 📌",
+                            message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"} - ${booking.fieldName ?: "Sân"}) ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""}) ${if (isConfirmed) "đã được xác nhận lịch chơi." else "đang chờ thanh toán cọc."}",
+                            time = if (index == 0) "Vừa xong" else "${(index + 1) * 15} phút trước",
+                            isUnread = index == 0
+                        )
+                    }
+                    _uiState.update { it.copy(mockNotifications = notifications) }
+                }
+                is ApiResult.Error -> {}
+            }
+        }
+    }
+
     fun selectTab(tab: HomeTab) {
         _uiState.update { it.copy(currentTab = tab) }
+        if (tab == HomeTab.NOTIFICATIONS) {
+            loadUserNotifications()
+        }
     }
 
     fun toggleFilterSheet(show: Boolean) {
@@ -166,7 +194,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refreshVenues() {
+        loadSportTypes()
         loadVenues(page = 0, isInitial = true)
+        loadUserNotifications()
+        _uiState.update { it.copy(snackbarMessage = "Đã cập nhật dữ liệu sân mới nhất từ hệ thống!") }
     }
 
     private fun loadVenues(page: Int, isInitial: Boolean) {

@@ -1,5 +1,7 @@
 package com.court.sportcourt.ui.navigation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -8,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,8 +22,13 @@ import com.court.sportcourt.ui.auth.RegisterScreen
 import com.court.sportcourt.ui.booking.BookingConfirmScreen
 import com.court.sportcourt.ui.booking.BookingDetailScreen
 import com.court.sportcourt.ui.booking.MyBookingsScreen
+import com.court.sportcourt.ui.components.NavigationTab
 import com.court.sportcourt.ui.field.FieldAvailabilityScreen
 import com.court.sportcourt.ui.home.HomeScreen
+import com.court.sportcourt.ui.payment.PaymentHistoryScreen
+import com.court.sportcourt.ui.payment.PaymentOptionScreen
+import com.court.sportcourt.ui.payment.PaymentResultScreen
+import com.court.sportcourt.ui.payment.PaymentWebViewScreen
 import com.court.sportcourt.ui.profile.ProfileScreen
 import com.court.sportcourt.ui.venue.VenueDetailScreen
 
@@ -34,6 +42,10 @@ object Routes {
     const val BOOKING_CONFIRM = "booking_confirm/{fieldId}/{date}/{startTime}/{endTime}/{totalAmount}"
     const val BOOKING_DETAIL = "booking_detail/{bookingId}"
     const val MY_BOOKINGS = "my_bookings"
+    const val PAYMENT_OPTION = "payment_option/{bookingId}/{totalAmount}/{depositAmount}"
+    const val PAYMENT_WEBVIEW = "payment_webview/{paymentId}"
+    const val PAYMENT_RESULT = "payment_result/{paymentId}"
+    const val PAYMENT_HISTORY = "payment_history"
 }
 
 @Composable
@@ -59,6 +71,39 @@ private fun AppNavGraph(
     isLoggedIn: Boolean
 ) {
     val navController = rememberNavController()
+
+    val handleTabSelected: (NavigationTab) -> Unit = { tab ->
+        when (tab) {
+            NavigationTab.HOME -> {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(Routes.HOME) { inclusive = true }
+                }
+            }
+            NavigationTab.BOOKINGS -> {
+                if (isLoggedIn) {
+                    navController.navigate(Routes.MY_BOOKINGS) {
+                        popUpTo(Routes.HOME) { inclusive = false }
+                    }
+                } else {
+                    navController.navigate(Routes.LOGIN)
+                }
+            }
+            NavigationTab.NOTIFICATIONS -> {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(Routes.HOME) { inclusive = true }
+                }
+            }
+            NavigationTab.PROFILE -> {
+                if (isLoggedIn) {
+                    navController.navigate(Routes.PROFILE) {
+                        popUpTo(Routes.HOME) { inclusive = false }
+                    }
+                } else {
+                    navController.navigate(Routes.LOGIN)
+                }
+            }
+        }
+    }
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -131,12 +176,13 @@ private fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onBookClick = { fieldId, selectedDate, startTime, endTime, totalPrice ->
                     if (isLoggedIn) {
-                        // Đã đăng nhập -> Mở màn hình Xác nhận đặt sân với đúng startTime, endTime và totalPrice được chọn
                         navController.navigate("booking_confirm/$fieldId/$selectedDate/$startTime/$endTime/${totalPrice.toFloat()}")
                     } else {
-                        // Chưa đăng nhập (Chế độ Khách) -> Chuyển sang màn hình Đăng nhập
                         navController.navigate(Routes.LOGIN)
                     }
+                },
+                onOpenMyPendingBooking = { bookingId ->
+                    navController.navigate("booking_detail/$bookingId")
                 }
             )
         }
@@ -154,7 +200,6 @@ private fun AppNavGraph(
             BookingConfirmScreen(
                 onBack = { navController.popBackStack() },
                 onBookingCreated = { createdBooking ->
-                    // Mở Màn hình Chi tiết đơn vừa tạo với Đồng hồ đếm ngược 15 phút
                     navController.navigate("booking_detail/${createdBooking.id}") {
                         popUpTo(Routes.HOME) { inclusive = false }
                     }
@@ -173,9 +218,81 @@ private fun AppNavGraph(
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
+                onNavigateToPaymentOption = { bookingId, totalAmount, depositAmount ->
+                    navController.navigate("payment_option/$bookingId/${totalAmount.toFloat()}/${depositAmount.toFloat()}")
+                }
+            )
+        }
+
+        composable(
+            route = Routes.PAYMENT_OPTION,
+            arguments = listOf(
+                navArgument("bookingId") { type = NavType.LongType },
+                navArgument("totalAmount") { type = NavType.FloatType },
+                navArgument("depositAmount") { type = NavType.FloatType }
+            )
+        ) {
+            val context = LocalContext.current
+            PaymentOptionScreen(
+                onBack = { navController.popBackStack() },
+                onOpenPaymentUrl = { paymentId, paymentUrl ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentUrl))
+                    context.startActivity(intent)
+
+                    navController.navigate("payment_result/$paymentId") {
+                        popUpTo(Routes.BOOKING_DETAIL) { inclusive = false }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "payment_webview/{paymentId}/{encodedUrl}",
+            arguments = listOf(
+                navArgument("paymentId") { type = NavType.LongType },
+                navArgument("encodedUrl") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val paymentId = backStackEntry.arguments?.getLong("paymentId") ?: 0L
+            val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
+            val paymentUrl = try {
+                String(
+                    android.util.Base64.decode(encodedUrl, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP),
+                    Charsets.UTF_8
+                )
+            } catch (e: Exception) {
+                ""
+            }
+            PaymentWebViewScreen(
+                paymentId = paymentId,
+                paymentUrl = paymentUrl,
+                onBack = { navController.popBackStack() },
+                onPaymentReturn = { returnedPaymentId ->
+                    navController.navigate("payment_result/$returnedPaymentId") {
+                        popUpTo(Routes.BOOKING_DETAIL) { inclusive = false }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Routes.PAYMENT_RESULT,
+            arguments = listOf(navArgument("paymentId") { type = NavType.LongType })
+        ) {
+            PaymentResultScreen(
+                onNavigateToBookingDetail = { bookingId ->
+                    navController.navigate("booking_detail/$bookingId") {
+                        popUpTo(Routes.HOME) { inclusive = false }
+                    }
+                },
                 onNavigateToMyBookings = {
                     navController.navigate(Routes.MY_BOOKINGS) {
                         popUpTo(Routes.HOME) { inclusive = false }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.HOME) { inclusive = true }
                     }
                 }
             )
@@ -186,7 +303,21 @@ private fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onBookingClick = { bookingId ->
                     navController.navigate("booking_detail/$bookingId")
-                }
+                },
+                onNavigateToMyPayments = {
+                    navController.navigate(Routes.PAYMENT_HISTORY)
+                },
+                onTabSelected = handleTabSelected
+            )
+        }
+
+        composable(Routes.PAYMENT_HISTORY) {
+            PaymentHistoryScreen(
+                onBack = { navController.popBackStack() },
+                onPaymentClick = { paymentId ->
+                    navController.navigate("payment_result/$paymentId")
+                },
+                onTabSelected = handleTabSelected
             )
         }
 
@@ -194,7 +325,8 @@ private fun AppNavGraph(
             ProfileScreen(
                 onBack = {
                     navController.popBackStack()
-                }
+                },
+                onTabSelected = handleTabSelected
             )
         }
     }

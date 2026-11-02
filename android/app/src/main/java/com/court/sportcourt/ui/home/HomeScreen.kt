@@ -95,10 +95,10 @@ fun HomeScreen(
                     )
                 },
                 actions = {
+                    TextButton(onClick = { viewModel.refreshVenues() }) {
+                        Text("🔄 Làm mới", fontWeight = FontWeight.Bold)
+                    }
                     if (session != null) {
-                        TextButton(onClick = onNavigateToProfile) {
-                            Text("Hồ sơ")
-                        }
                         TextButton(onClick = { viewModel.logout(onLoggedOut) }) {
                             Text("Đăng xuất", color = MaterialTheme.colorScheme.error)
                         }
@@ -437,7 +437,7 @@ private fun HomeContentView(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -446,7 +446,12 @@ private fun HomeContentView(
                             enabled = uiState.page > 0 && !uiState.isLoading,
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("◀️ Trang trước", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                text = "‹ Trước",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
 
                         Surface(
@@ -458,7 +463,8 @@ private fun HomeContentView(
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                maxLines = 1
                             )
                         }
 
@@ -467,7 +473,12 @@ private fun HomeContentView(
                             enabled = uiState.page < uiState.totalPages - 1 && !uiState.isLoading,
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Trang sau ▶️", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = "Sau ›",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
                     }
                 }

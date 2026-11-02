@@ -20,11 +20,9 @@ data class FieldDto(
     val basePrice: Double = 0.0,
     val status: String = "ACTIVE"
 ) {
-    // SỬA: backend không trả trường này cho danh sách sân, tự tính từ status (không đưa vào JSON)
     val bookable: Boolean get() = status == "ACTIVE"
 }
 
-// THÊM: khớp đối tượng "policy" của API chi tiết địa điểm
 @Serializable
 data class PolicyDto(
     val depositPercentage: Double = 30.0,
@@ -42,7 +40,7 @@ data class VenueResponse(
     val name: String,
     val address: String,
     val city: String? = null,
-    val district: String? = null, // SỬA: cho phép rỗng
+    val district: String? = null,
     val description: String? = null,
     val phone: String? = null,
     val openingTime: String? = null,
@@ -50,8 +48,8 @@ data class VenueResponse(
     val status: String = "ACTIVE",
     val sportTypes: List<String> = emptyList(),
     val fieldCount: Int? = null,
-    val minBasePrice: Double? = null, // SỬA: null nghĩa là chưa có sân đang hoạt động
-    val policy: PolicyDto? = null, // THÊM: thay cho depositPolicy và cancellationPolicy
+    val minBasePrice: Double? = null,
+    val policy: PolicyDto? = null,
     val fields: List<FieldDto> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null
@@ -73,7 +71,8 @@ data class TimeSlotDto(
     val startTime: String,
     val endTime: String,
     val price: Double,
-    val status: String
+    val status: String,
+    val myPendingBookingId: Long? = null
 )
 
 @Serializable

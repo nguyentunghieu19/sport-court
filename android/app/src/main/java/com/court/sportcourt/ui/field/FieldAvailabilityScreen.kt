@@ -51,6 +51,7 @@ import java.util.Locale
 fun FieldAvailabilityScreen(
     onBack: () -> Unit,
     onBookClick: (fieldId: Long, selectedDate: String, startTime: String, endTime: String, totalPrice: Double) -> Unit,
+    onOpenMyPendingBooking: (bookingId: Long) -> Unit = {},
     viewModel: FieldAvailabilityViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -229,7 +230,9 @@ fun FieldAvailabilityScreen(
                             TimeSlotCard(
                                 slot = slot,
                                 isSelected = isSelected,
-                                onClick = { viewModel.toggleTimeSlot(index) }
+                                onClick = {
+                                    viewModel.toggleTimeSlot(index, onOpenMyPendingBooking)
+                                }
                             )
                         }
                     }
@@ -246,17 +249,21 @@ private fun TimeSlotCard(
     onClick: () -> Unit
 ) {
     val isAvailable = slot.status == "AVAILABLE"
+    val isMyPending = slot.status == "PENDING_PAYMENT" && slot.myPendingBookingId != null
+    val isClickable = isAvailable || isMyPending
+    val isPending = slot.status == "PENDING" || slot.status == "PENDING_PAYMENT" || slot.status == "HOLD"
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale("vi", "VN")) }
     val formattedPrice = remember(slot.price) { currencyFormatter.format(slot.price) }
 
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         isAvailable -> MaterialTheme.colorScheme.surface
-        slot.status == "BOOKED" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        isPending -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
     }
 
-    val border = if (isSelected) {
+    val border = if (isSelected || isMyPending) {
         BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else {
         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -265,7 +272,7 @@ private fun TimeSlotCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = isAvailable, onClick = onClick),
+            .clickable(enabled = isClickable, onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = border
@@ -278,7 +285,7 @@ private fun TimeSlotCard(
                 text = "${slot.startTime} - ${slot.endTime}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isAvailable) MaterialTheme.colorScheme.onSurface else Color.Gray
+                color = if (isClickable) MaterialTheme.colorScheme.onSurface else Color.Gray
             )
 
             Spacer(Modifier.height(4.dp))
@@ -287,30 +294,35 @@ private fun TimeSlotCard(
                 text = formattedPrice,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isAvailable) MaterialTheme.colorScheme.primary else Color.Gray
+                color = if (isClickable) MaterialTheme.colorScheme.primary else Color.Gray
             )
 
             Spacer(Modifier.height(6.dp))
 
             Surface(
-                color = when (slot.status) {
-                    "AVAILABLE" -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-                    "BOOKED" -> MaterialTheme.colorScheme.outlineVariant
+                color = when {
+                    isAvailable -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                    isPending -> MaterialTheme.colorScheme.tertiaryContainer
+                    slot.status == "BOOKED" || slot.status == "CONFIRMED" -> MaterialTheme.colorScheme.outlineVariant
                     else -> MaterialTheme.colorScheme.error
                 },
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
-                    text = when (slot.status) {
-                        "AVAILABLE" -> if (isSelected) "✓ Đã chọn" else "🟢 Giờ trống"
-                        "BOOKED" -> "🔒 Đã đặt"
+                    text = when {
+                        isAvailable -> if (isSelected) "✓ Đã chọn" else "🟢 Giờ trống"
+                        isMyPending -> "⏳ Của bạn (Bấm xem)"
+                        isPending -> "⏳ Đang xử lý"
+                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> "🔒 Đã đặt"
                         else -> "🔴 Bảo trì"
                     },
                     style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
                     color = when {
                         isSelected -> MaterialTheme.colorScheme.onPrimary
-                        slot.status == "AVAILABLE" -> MaterialTheme.colorScheme.onSecondaryContainer
-                        slot.status == "BOOKED" -> Color.DarkGray
+                        isAvailable -> MaterialTheme.colorScheme.onSecondaryContainer
+                        isPending -> MaterialTheme.colorScheme.onTertiaryContainer
+                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> Color.DarkGray
                         else -> MaterialTheme.colorScheme.onError
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.court.sportcourt.data.remote.dto.FieldAvailabilityResponse
 import com.court.sportcourt.data.repository.ApiResult
+import com.court.sportcourt.data.repository.BookingRepository
 import com.court.sportcourt.data.repository.VenueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,7 @@ data class FieldAvailabilityUiState(
 @HiltViewModel
 class FieldAvailabilityViewModel @Inject constructor(
     private val venueRepository: VenueRepository,
+    private val bookingRepository: BookingRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -86,13 +88,40 @@ class FieldAvailabilityViewModel @Inject constructor(
     fun loadAvailability(dateString: String) {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            when (val result = venueRepository.getFieldAvailability(fieldId, dateString)) {
+            val availabilityResult = venueRepository.getFieldAvailability(fieldId, dateString)
+            val pendingBookingsResult = bookingRepository.getMyBookings(status = "PENDING_PAYMENT")
+
+            when (availabilityResult) {
                 is ApiResult.Success -> {
-                    val response = result.data
+                    val response = availabilityResult.data
+                    val pendingBookings = if (pendingBookingsResult is ApiResult.Success) {
+                        pendingBookingsResult.data.content.filter {
+                            (it.fieldId == fieldId) && (it.date == dateString)
+                        }
+                    } else emptyList()
+
+                    val updatedSlots = response.slots.map { slot ->
+                        val matchingPendingBooking = pendingBookings.find { pending ->
+                            val slotStart = slot.startTime.take(5)
+                            val pendingStart = (pending.startTime ?: "").take(5)
+                            slotStart == pendingStart
+                        }
+                        if (matchingPendingBooking != null && (slot.status == "BOOKED" || slot.status == "PENDING" || slot.status == "PENDING_PAYMENT")) {
+                            slot.copy(
+                                status = "PENDING_PAYMENT",
+                                myPendingBookingId = matchingPendingBooking.id
+                            )
+                        } else {
+                            slot
+                        }
+                    }
+
+                    val updatedResponse = response.copy(slots = updatedSlots)
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            availabilityResponse = response,
+                            availabilityResponse = updatedResponse,
                             isBookable = response.bookable
                         )
                     }
@@ -101,7 +130,7 @@ class FieldAvailabilityViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.message,
+                            errorMessage = availabilityResult.message,
                             availabilityResponse = null
                         )
                     }
@@ -110,14 +139,26 @@ class FieldAvailabilityViewModel @Inject constructor(
         }
     }
 
-    fun toggleTimeSlot(index: Int) {
+    fun toggleTimeSlot(index: Int, onOpenMyPendingBooking: (Long) -> Unit = {}) {
         val slots = _uiState.value.availabilityResponse?.timeSlots ?: return
         if (index !in slots.indices) return
 
         val slot = slots[index]
+
+        // Nếu đây là ô giờ ĐANG XỬ LÝ CỦA CHÍNH NGƯỜI DÙNG NÀY -> Cho bấm vào lại để mở Màn Chi tiết đơn
+        if (slot.status == "PENDING_PAYMENT" && slot.myPendingBookingId != null) {
+            onOpenMyPendingBooking(slot.myPendingBookingId)
+            return
+        }
+
         if (slot.status != "AVAILABLE") {
+            val message = if (slot.status == "PENDING_PAYMENT") {
+                "Khung giờ này đang có người khác chọn giữ chỗ & thanh toán cọc, không thể chọn"
+            } else {
+                "Khung giờ này đã được đặt hoặc bảo trì, không thể chọn"
+            }
             _uiState.update {
-                it.copy(snackbarMessage = "Khung giờ này đã được đặt hoặc bảo trì, không thể chọn")
+                it.copy(snackbarMessage = message)
             }
             return
         }

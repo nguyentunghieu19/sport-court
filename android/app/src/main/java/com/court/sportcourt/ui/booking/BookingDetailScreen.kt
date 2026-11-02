@@ -44,7 +44,7 @@ import java.util.Locale
 fun BookingDetailScreen(
     onBack: () -> Unit,
     onNavigateToHome: () -> Unit = {},
-    onNavigateToMyBookings: () -> Unit = {},
+    onNavigateToPaymentOption: (bookingId: Long, totalAmount: Double, depositAmount: Double) -> Unit = { _, _, _ -> },
     viewModel: BookingDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -98,42 +98,44 @@ fun BookingDetailScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // Thẻ Đồng hồ đếm ngược 15 phút (Countdown Timer)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (state.isExpired)
-                            MaterialTheme.colorScheme.errorContainer
-                        else
-                            MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                // Thẻ Đồng hồ đếm ngược 15 phút (Chỉ hiển thị khi đơn đang CHỜ THANH TOÁN CỌC)
+                if (booking.status == "PENDING_PAYMENT") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (state.isExpired)
+                                MaterialTheme.colorScheme.errorContainer
+                            else
+                                MaterialTheme.colorScheme.primaryContainer
+                        )
                     ) {
-                        Text(
-                            text = if (state.isExpired) "⏰ Đã hết thời hạn thanh toán cọc!" else "⏰ Thời gian còn lại để giữ sân & cọc:",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = if (state.isExpired) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (state.isExpired) "⏰ Đã hết thời hạn thanh toán cọc!" else "⏰ Thời gian còn lại để giữ sân & cọc:",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (state.isExpired) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+                            )
 
-                        Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(8.dp))
 
-                        Text(
-                            text = state.formattedCountdown,
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (state.isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
+                            Text(
+                                text = state.formattedCountdown,
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (state.isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
+                }
 
                 // Thẻ Thông tin Mã đơn & Trạng thái
                 Card(
@@ -278,32 +280,34 @@ fun BookingDetailScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
-                // Nút điều hướng nhanh ở Màn Chi tiết đơn
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onNavigateToHome,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("🏠 Trang chủ", fontWeight = FontWeight.Bold)
-                    }
-
+                // Nút Thanh toán ngay qua VNPay (Nút hành động chính)
+                if (booking.status == "PENDING_PAYMENT" && !state.isExpired) {
                     Button(
-                        onClick = onNavigateToMyBookings,
+                        onClick = {
+                            onNavigateToPaymentOption(booking.id, booking.totalAmount, booking.depositAmount)
+                        },
                         modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
+                            .fillMaxWidth()
+                            .height(52.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("📅 Lịch đặt của tôi", fontWeight = FontWeight.Bold)
+                        Text("💳 Thanh toán ngay qua VNPay", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
+
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // Nút Quay Về Trang Chủ (Loại bỏ nút trùng lặp với menu dưới)
+                OutlinedButton(
+                    onClick = onNavigateToHome,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("🏠 Về trang chủ", fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(Modifier.height(16.dp))
