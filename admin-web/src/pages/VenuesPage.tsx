@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
@@ -34,6 +34,10 @@ export function VenuesPage() {
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Tìm kiếm & lọc danh sách địa điểm ──
+  const [venueSearch, setVenueSearch] = useState("");
+  const [venueStatusFilter, setVenueStatusFilter] = useState("ALL");
 
   // ── Thêm địa điểm ──
   const [addError, setAddError] = useState<string | null>(null);
@@ -186,6 +190,22 @@ export function VenuesPage() {
 
   const formatTime = (t: string) => (t ? t.substring(0, 5) : t);
 
+  const filteredVenues = useMemo(() => {
+    const q = venueSearch.trim().toLowerCase();
+    return venues.filter((venue) => {
+      if (venueStatusFilter !== "ALL" && venue.status !== venueStatusFilter) return false;
+      if (!q) return true;
+      return (
+        venue.name.toLowerCase().includes(q) ||
+        (venue.district && venue.district.toLowerCase().includes(q)) ||
+        (venue.city && venue.city.toLowerCase().includes(q)) ||
+        (venue.address && venue.address.toLowerCase().includes(q)) ||
+        (venue.description && venue.description.toLowerCase().includes(q)) ||
+        (venue.phone && venue.phone.includes(q))
+      );
+    });
+  }, [venues, venueSearch, venueStatusFilter]);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-12">
       {/* ── HEADER ── */}
@@ -284,6 +304,62 @@ export function VenuesPage() {
             </div>
           )}
 
+          {/* ── Thanh tìm kiếm & lọc trạng thái ── */}
+          {!loading && !error && venues.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+              {/* Ô tìm kiếm */}
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={venueSearch}
+                  onChange={(e) => setVenueSearch(e.target.value)}
+                  placeholder="Tìm tên, địa chỉ, quận/huyện, SĐT..."
+                  className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-8 text-xs transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+                />
+                {venueSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setVenueSearch("")}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Nút lọc trạng thái */}
+              <div className="flex flex-shrink-0 items-center gap-2">
+                {(["ALL", "ACTIVE", "INACTIVE"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setVenueStatusFilter(s)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      venueStatusFilter === s
+                        ? s === "ACTIVE"
+                          ? "bg-emerald-600 text-white"
+                          : s === "INACTIVE"
+                            ? "bg-red-500 text-white"
+                            : "bg-gray-800 text-white"
+                        : "border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {s === "ALL" ? "Tất cả" : s === "ACTIVE" ? "Hoạt động" : "Tạm ngưng"}
+                  </button>
+                ))}
+                <span className="ml-1 text-xs font-medium text-gray-400">
+                  {filteredVenues.length}/{venues.length}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Danh sách trống */}
           {!loading && !error && venues.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
@@ -305,10 +381,30 @@ export function VenuesPage() {
             </div>
           )}
 
+          {/* Không tìm thấy kết quả lọc */}
+          {!loading && !error && venues.length > 0 && filteredVenues.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-700">Không tìm thấy địa điểm phù hợp</p>
+              <p className="text-xs text-gray-400">Thử thay đổi từ khóa hoặc bộ lọc trạng thái</p>
+              <button
+                type="button"
+                onClick={() => { setVenueSearch(""); setVenueStatusFilter("ALL"); }}
+                className="mt-1 rounded-lg border border-gray-300 px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+          )}
+
           {/* Danh sách card */}
           {!loading &&
             !error &&
-            venues.map((venue) => {
+            filteredVenues.map((venue) => {
               const s = statusLabel(venue.status);
               return (
                 <div
@@ -372,20 +468,26 @@ export function VenuesPage() {
                       <button
                         type="button"
                         onClick={() => openQuickAdd(venue)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-green-700"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-green-700"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path d="M12 4v16m8-8H4" />
                         </svg>
-                        ⚡ Thêm sân nhanh
+                        Thêm sân nhanh
                       </button>
                       <Link
-                        to={`/venues/${venue.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                        to={`/venues/${venue.id}?tab=policy`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
                       >
-                        <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
+                        Chính sách cọc
+                      </Link>
+                      <Link
+                        to={`/venues/${venue.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                      >
                         Quản lý →
                       </Link>
                     </div>
@@ -648,7 +750,7 @@ export function VenuesPage() {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between border-b border-gray-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-gray-900">⚡ Thêm sân nhanh</h3>
+                <h3 className="text-base font-bold text-gray-900">Thêm sân nhanh</h3>
                 <p className="mt-0.5 text-xs text-gray-500">
                   Cụm sân: <span className="font-semibold text-gray-700">{quickAddVenue.name}</span> — {quickAddVenue.district}, {quickAddVenue.city}
                 </p>

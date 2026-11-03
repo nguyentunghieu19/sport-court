@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
+import * as policyService from "../services/policyService";
+import type { PolicyRequest, PolicyResponse } from "../types/policy";
 import type {
   CreateFieldRequest,
   FieldResponse,
@@ -24,7 +26,7 @@ const QUICK_SPORT_OPTIONS: { value: SportType; label: string }[] = [
   { value: "OTHER", label: "Khác" },
 ];
 
-type TabKey = "EDIT" | "FIELDS";
+type TabKey = "EDIT" | "FIELDS" | "POLICY";
 
 /**
  * Trang Sửa địa điểm, Tạm ngừng / Mở lại & Danh sách sân của 1 địa điểm (VenueEditPage)
@@ -54,6 +56,30 @@ export function VenueEditPage() {
   const [loadingFields, setLoadingFields] = useState(false);
   const [fieldsError, setFieldsError] = useState<string | null>(null);
 
+  // Bộ lọc cho danh sách sân con (Tab FIELDS)
+  const [fieldSearchTerm, setFieldSearchTerm] = useState("");
+  const [fieldSportFilter, setFieldSportFilter] = useState<string>("ALL");
+  const [fieldStatusFilter, setFieldStatusFilter] = useState<string>("ALL");
+
+  const filteredFields = useMemo(() => {
+    return fields.filter((f) => {
+      const q = fieldSearchTerm.trim().toLowerCase();
+      const matchQuery =
+        !q ||
+        f.name.toLowerCase().includes(q) ||
+        (f.description && f.description.toLowerCase().includes(q));
+
+      const matchSport =
+        fieldSportFilter === "ALL" ||
+        f.sportType.toUpperCase() === fieldSportFilter.toUpperCase();
+
+      const matchStatus =
+        fieldStatusFilter === "ALL" || f.status === fieldStatusFilter;
+
+      return matchQuery && matchSport && matchStatus;
+    });
+  }, [fields, fieldSearchTerm, fieldSportFilter, fieldStatusFilter]);
+
   // Chỉnh sửa form
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -79,6 +105,21 @@ export function VenueEditPage() {
   const [qfPrice, setQfPrice] = useState<number | string>(100000);
   const [qfCapacity, setQfCapacity] = useState<number | string>("");
   const [qfDesc, setQfDesc] = useState("");
+
+  // ── Tab Chính sách đặt sân (GET / PUT /api/owner/venues/{id}/policy) ──
+  const [policy, setPolicy] = useState<PolicyResponse | null>(null);
+  const [loadingPolicy, setLoadingPolicy] = useState(false);
+  const [policyError, setPolicyError] = useState<string | null>(null);
+  const [policySuccess, setPolicySuccess] = useState<string | null>(null);
+  const [savingPolicy, setSavingPolicy] = useState(false);
+
+  // Form values cho chính sách: 6 trường
+  const [policyDepositPercentage, setPolicyDepositPercentage] = useState<number | string>(30);
+  const [policyCancellationDeadlineHours, setPolicyCancellationDeadlineHours] = useState<number | string>(24);
+  const [policyPaymentTimeoutMinutes, setPolicyPaymentTimeoutMinutes] = useState<number | string>(15);
+  const [policyDepositRefundable, setPolicyDepositRefundable] = useState<boolean>(false);
+  const [policyFullPaymentRefundable, setPolicyFullPaymentRefundable] = useState<boolean>(true);
+  const [policyOwnerCancellationFullRefund, setPolicyOwnerCancellationFullRefund] = useState<boolean>(true);
 
   const {
     register,
@@ -132,15 +173,103 @@ export function VenueEditPage() {
     }
   };
 
+  // Tải chính sách đặt sân của địa điểm (GET /api/owner/venues/{venueId}/policy)
+  const fetchPolicy = async () => {
+    if (!venueId || isNaN(venueId)) return;
+    try {
+      setLoadingPolicy(true);
+      setPolicyError(null);
+      const data = await policyService.getVenuePolicy(venueId);
+      setPolicy(data);
+      setPolicyDepositPercentage(data.depositPercentage);
+      setPolicyCancellationDeadlineHours(data.cancellationDeadlineHours);
+      setPolicyPaymentTimeoutMinutes(data.paymentTimeoutMinutes);
+      setPolicyDepositRefundable(data.depositRefundableOnCustomerCancel);
+      setPolicyFullPaymentRefundable(data.fullPaymentRefundableBeforeDeadline);
+      setPolicyOwnerCancellationFullRefund(data.ownerCancellationFullRefund);
+    } catch (err) {
+      setPolicyError(getErrorMessage(err));
+    } finally {
+      setLoadingPolicy(false);
+    }
+  };
+
+  // Submit lưu chính sách đặt sân (PUT /api/owner/venues/{venueId}/policy)
+  const handleSavePolicy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!venueId || isNaN(venueId)) return;
+    setPolicyError(null);
+    setPolicySuccess(null);
+
+    const depositNum = Number(policyDepositPercentage);
+    if (isNaN(depositNum) || depositNum < 10 || depositNum > 100) {
+      setPolicyError("Tỷ lệ đặt cọc tối thiểu 10% và tối đa 100%");
+      return;
+    }
+
+    const deadlineNum = Number(policyCancellationDeadlineHours);
+    if (isNaN(deadlineNum) || deadlineNum < 0 || deadlineNum > 720) {
+      setPolicyError("Hạn hủy không được âm và tối đa 720 giờ");
+      return;
+    }
+
+    const timeoutNum = Number(policyPaymentTimeoutMinutes);
+    if (isNaN(timeoutNum) || timeoutNum < 5 || timeoutNum > 120) {
+      setPolicyError("Thời gian giữ chỗ tối thiểu 5 phút và tối đa 120 phút");
+      return;
+    }
+
+    try {
+      setSavingPolicy(true);
+      const payload: PolicyRequest = {
+        depositPercentage: depositNum,
+        cancellationDeadlineHours: deadlineNum,
+        paymentTimeoutMinutes: timeoutNum,
+        depositRefundableOnCustomerCancel: Boolean(policyDepositRefundable),
+        fullPaymentRefundableBeforeDeadline: Boolean(policyFullPaymentRefundable),
+        ownerCancellationFullRefund: Boolean(policyOwnerCancellationFullRefund),
+      };
+      const updated = await policyService.updateVenuePolicy(venueId, payload);
+      setPolicy(updated);
+      setPolicyDepositPercentage(updated.depositPercentage);
+      setPolicyCancellationDeadlineHours(updated.cancellationDeadlineHours);
+      setPolicyPaymentTimeoutMinutes(updated.paymentTimeoutMinutes);
+      setPolicyDepositRefundable(updated.depositRefundableOnCustomerCancel);
+      setPolicyFullPaymentRefundable(updated.fullPaymentRefundableBeforeDeadline);
+      setPolicyOwnerCancellationFullRefund(updated.ownerCancellationFullRefund);
+      setPolicySuccess("Đã lưu chính sách đặt sân thành công!");
+    } catch (err) {
+      setPolicyError(getErrorMessage(err));
+    } finally {
+      setSavingPolicy(false);
+    }
+  };
+
+  const handleResetPolicyDefaults = () => {
+    setPolicyDepositPercentage(30);
+    setPolicyCancellationDeadlineHours(24);
+    setPolicyPaymentTimeoutMinutes(15);
+    setPolicyDepositRefundable(false);
+    setPolicyFullPaymentRefundable(true);
+    setPolicyOwnerCancellationFullRefund(true);
+    setPolicySuccess(null);
+    setPolicyError(null);
+  };
+
   useEffect(() => {
     fetchVenue();
     fetchFields();
+    fetchPolicy();
   }, [venueId]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get("tab") === "fields") {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "fields") {
       setActiveTab("FIELDS");
+    } else if (tabParam === "policy") {
+      setActiveTab("POLICY");
+      fetchPolicy();
     }
   }, [location.search]);
 
@@ -457,6 +586,27 @@ export function VenueEditPage() {
               </span>
             </span>
             {activeTab === "FIELDS" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("POLICY");
+              fetchPolicy();
+            }}
+            className={`relative px-4 py-2.5 text-sm font-semibold transition ${activeTab === "POLICY"
+              ? "text-green-700"
+              : "text-gray-500 hover:text-gray-900"
+              }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Chính sách đặt sân
+            </span>
+            {activeTab === "POLICY" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
             )}
           </button>
@@ -785,10 +935,87 @@ export function VenueEditPage() {
             </div>
           )}
 
-          {/* Grid / List of Fields */}
+          {/* Thanh tìm kiếm & Bộ lọc sân con */}
           {!loadingFields && !fieldsError && fields.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={fieldSearchTerm}
+                  onChange={(e) => setFieldSearchTerm(e.target.value)}
+                  placeholder="Lọc tên sân, mô tả..."
+                  className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-8 text-xs transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+                />
+                {fieldSearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setFieldSearchTerm("")}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={fieldSportFilter}
+                  onChange={(e) => setFieldSportFilter(e.target.value)}
+                  className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition focus:border-green-600 focus:outline-none"
+                >
+                  <option value="ALL">Tất cả môn thể thao</option>
+                  {QUICK_SPORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={fieldStatusFilter}
+                  onChange={(e) => setFieldStatusFilter(e.target.value)}
+                  className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition focus:border-green-600 focus:outline-none"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Tạm ngưng</option>
+                  <option value="MAINTENANCE">Bảo trì</option>
+                </select>
+
+                <span className="text-[11px] font-semibold text-gray-500 whitespace-nowrap pl-1">
+                  ({filteredFields.length}/{fields.length} sân)
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Grid / List of Fields */}
+          {!loadingFields && !fieldsError && fields.length > 0 && filteredFields.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-xs text-gray-500">
+              Không tìm thấy sân thi đấu nào khớp với từ khóa hoặc bộ lọc đã chọn.
+              <button
+                type="button"
+                onClick={() => {
+                  setFieldSearchTerm("");
+                  setFieldSportFilter("ALL");
+                  setFieldStatusFilter("ALL");
+                }}
+                className="mt-2 block mx-auto text-green-700 font-bold hover:underline"
+              >
+                Đặt lại bộ lọc sân
+              </button>
+            </div>
+          )}
+
+          {!loadingFields && !fieldsError && filteredFields.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {fields.map((field) => {
+              {filteredFields.map((field) => {
                 const sport = formatSport(field.sportType);
                 const st = formatFieldStatus(field.status);
                 return (
@@ -881,6 +1108,332 @@ export function VenueEditPage() {
                 );
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════ TAB 3: CHÍNH SÁCH ĐẶT SÂN (GET / PUT /api/owner/venues/{id}/policy) ══════════════ */}
+      {activeTab === "POLICY" && (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                Chính sách đặt sân & Quy định thanh toán
+              </h2>
+              <p className="text-xs text-gray-500">
+                Thiết lập tỷ lệ cọc, thời hạn hủy, thời gian giữ chỗ và các quy tắc hoàn tiền áp dụng cho cụm "{venue.name}"
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchPolicy}
+                disabled={loadingPolicy || savingPolicy}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 shadow-2xs"
+              >
+                <svg
+                  className={`h-3.5 w-3.5 ${loadingPolicy ? "animate-spin text-green-600" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Làm mới
+              </button>
+              <button
+                type="button"
+                onClick={handleResetPolicyDefaults}
+                disabled={savingPolicy}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Đặt về mặc định
+              </button>
+            </div>
+          </div>
+
+          {/* Thông báo thành công */}
+          {policySuccess && (
+            <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 shadow-xs">
+              <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-green-800">Thành công</p>
+                <p className="text-xs text-green-700">{policySuccess}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Thông báo lỗi */}
+          {policyError && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 shadow-xs">
+              <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-red-800">Có lỗi xảy ra</p>
+                <p className="text-xs text-red-700">{policyError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loadingPolicy && !policy ? (
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white p-12 text-sm text-gray-500 shadow-sm">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-green-600" />
+              Đang tải chính sách đặt sân...
+            </div>
+          ) : (
+            <form onSubmit={handleSavePolicy} className="space-y-6">
+              {/* KHỐI 1: TỶ LỆ CỌC, HẠN HỦY, THỜI GIAN GIỮ CHỖ */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
+                  Thời gian & Tỷ lệ đặt cọc
+                </h3>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                  {/* Trường 1: depositPercentage */}
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-gray-800">
+                        Tỷ lệ đặt cọc (%) <span className="text-red-500">*</span>
+                      </label>
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+                        10% - 100%
+                      </span>
+                    </div>
+                    <div className="relative mt-2">
+                      <input
+                        type="number"
+                        min={10}
+                        max={100}
+                        step={1}
+                        required
+                        value={policyDepositPercentage}
+                        onChange={(e) => setPolicyDepositPercentage(e.target.value)}
+                        placeholder="30"
+                        disabled={savingPolicy}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
+                        %
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-gray-500">
+                      Tỷ lệ phần trăm tiền cọc khách cần thanh toán khi tạo đơn đặt chỗ.
+                    </p>
+                  </div>
+
+                  {/* Trường 2: cancellationDeadlineHours */}
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-gray-800">
+                        Hạn hủy trước giờ chơi <span className="text-red-500">*</span>
+                      </label>
+                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                        0 - 720 giờ
+                      </span>
+                    </div>
+                    <div className="relative mt-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={720}
+                        step={1}
+                        required
+                        value={policyCancellationDeadlineHours}
+                        onChange={(e) => setPolicyCancellationDeadlineHours(e.target.value)}
+                        placeholder="24"
+                        disabled={savingPolicy}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
+                        giờ
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-gray-500">
+                      Số giờ tối thiểu khách phải thông báo hủy trước giờ bắt đầu để được xét hoàn tiền.
+                    </p>
+                  </div>
+
+                  {/* Trường 3: paymentTimeoutMinutes */}
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-gray-800">
+                        Thời gian giữ chỗ <span className="text-red-500">*</span>
+                      </label>
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                        5 - 120 phút
+                      </span>
+                    </div>
+                    <div className="relative mt-2">
+                      <input
+                        type="number"
+                        min={5}
+                        max={120}
+                        step={1}
+                        required
+                        value={policyPaymentTimeoutMinutes}
+                        onChange={(e) => setPolicyPaymentTimeoutMinutes(e.target.value)}
+                        placeholder="15"
+                        disabled={savingPolicy}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
+                        phút
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-gray-500">
+                      Thời gian đếm ngược giữ chỗ chờ thanh toán trước khi đơn tự động hủy.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* KHỐI 2: QUY TẮC HOÀN TIỀN */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
+                  Quy tắc hoàn tiền khi hủy sân
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Switch 1: depositRefundableOnCustomerCancel */}
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-gray-900">
+                        Hoàn tiền cọc khi khách hủy
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Cho phép hoàn lại tiền đặt cọc cho khách hàng nếu khách chủ động hủy đơn trước hạn quy định.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={policyDepositRefundable}
+                      onClick={() => setPolicyDepositRefundable(!policyDepositRefundable)}
+                      disabled={savingPolicy}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyDepositRefundable ? "bg-green-600" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          policyDepositRefundable ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Switch 2: fullPaymentRefundableBeforeDeadline */}
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-gray-900">
+                        Hoàn tiền thanh toán toàn bộ trước hạn hủy
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Cho phép hoàn 100% số tiền nếu khách đã thanh toán toàn bộ đơn đặt sân và hủy trước hạn quy định.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={policyFullPaymentRefundable}
+                      onClick={() => setPolicyFullPaymentRefundable(!policyFullPaymentRefundable)}
+                      disabled={savingPolicy}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyFullPaymentRefundable ? "bg-green-600" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          policyFullPaymentRefundable ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Switch 3: ownerCancellationFullRefund */}
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-gray-900">
+                        Hoàn đầy đủ 100% khi chủ sân hủy
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Luôn hoàn lại đầy đủ toàn bộ số tiền cọc/thanh toán nếu phía chủ sân chủ động hủy lịch đặt của khách.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={policyOwnerCancellationFullRefund}
+                      onClick={() => setPolicyOwnerCancellationFullRefund(!policyOwnerCancellationFullRefund)}
+                      disabled={savingPolicy}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyOwnerCancellationFullRefund ? "bg-green-600" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          policyOwnerCancellationFullRefund ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* KHỐI 3: GHI CHÚ VẬN HÀNH & NÚT LƯU */}
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-800">
+                <div className="flex items-center gap-2 font-bold mb-1">
+                  <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  Ghi chú vận hành hệ thống
+                </div>
+                <p>
+                  Chính sách này sẽ được áp dụng ngay lập tức cho các khách hàng đặt sân thuộc cụm "{venue.name}".
+                  Các đơn đặt trước đó vẫn được lưu giữ và áp dụng theo chính sách tại thời điểm đơn được tạo.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={fetchPolicy}
+                  disabled={savingPolicy}
+                  className="rounded-xl border border-gray-300 px-5 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Hủy thay đổi
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingPolicy}
+                  className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-green-700 disabled:opacity-50"
+                >
+                  {savingPolicy ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Đang lưu chính sách...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M5 13l4 4L19 7" />
+                      </svg>
+                      Lưu chính sách
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           )}
         </div>
       )}
