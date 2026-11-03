@@ -54,6 +54,7 @@ public class BookingService {
     private static final int MAX_PENDING_PER_USER = 3;
     private static final BigDecimal DEFAULT_DEPOSIT_PERCENTAGE = new BigDecimal("30");
     private static final int DEFAULT_PAYMENT_TIMEOUT_MINUTES = 15;
+    private static final int DEFAULT_CANCELLATION_DEADLINE_HOURS = 24; // MỚI
     private static final int MAX_PAGE_SIZE = 50;
     private static final List<BookingStatus> BLOCKING_STATUSES =
             List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED);
@@ -142,6 +143,14 @@ public class BookingService {
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
         booking.setCustomerNote(blankToNull(request.note()));
         booking.setExpiresAt(Instant.now().plus(timeoutMinutes, ChronoUnit.MINUTES));
+
+        // MỚI: lưu chính sách hủy và hoàn tiền áp dụng lúc đặt, chủ sân đổi chính sách sau không ảnh hưởng đơn này
+        booking.setPolicyCancellationDeadlineHours(policy.map(BookingPolicy::getCancellationDeadlineHours)
+                .orElse(DEFAULT_CANCELLATION_DEADLINE_HOURS));
+        booking.setPolicyDepositRefundable(policy.map(BookingPolicy::isDepositRefundableOnCustomerCancel)
+                .orElse(false));
+        booking.setPolicyFullPaymentRefundable(policy.map(BookingPolicy::isFullPaymentRefundableBeforeDeadline)
+                .orElse(true));
 
         try {
             booking = bookingRepository.saveAndFlush(booking);

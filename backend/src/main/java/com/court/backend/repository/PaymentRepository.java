@@ -14,6 +14,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByBookingIdAndStatus(Long bookingId, PaymentStatus status);
 
+    List<Payment> findByBookingIdOrderByIdAsc(Long bookingId);
+
     // Đã có giao dịch thành công khác cho cùng đơn (dùng để phát hiện thanh toán trùng)
     boolean existsByBookingIdAndStatusAndIdNot(Long bookingId, PaymentStatus status, Long id);
 

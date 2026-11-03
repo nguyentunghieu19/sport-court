@@ -74,13 +74,23 @@ public class Booking {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
-    // Người thực hiện hủy (cột thêm ở Bài 4)
+    // Người thực hiện hủy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cancelled_by")
     private User cancelledBy;
 
     @Column(name = "expires_at")
     private Instant expiresAt;
+
+    // Chính sách áp dụng lúc đặt (null với các đơn tạo trước khi có cột này)
+    @Column(name = "policy_cancellation_deadline_hours")
+    private Integer policyCancellationDeadlineHours;
+
+    @Column(name = "policy_deposit_refundable")
+    private Boolean policyDepositRefundable;
+
+    @Column(name = "policy_full_payment_refundable")
+    private Boolean policyFullPaymentRefundable;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
