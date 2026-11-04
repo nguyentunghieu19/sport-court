@@ -158,30 +158,45 @@ export function AdminLayout() {
     : getBreadcrumb(location.pathname);
 
   const navItemClass = (active: boolean) =>
-    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition " +
+    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 " +
     (sidebarCollapsed ? "md:justify-center md:px-2 " : "") +
     (active
-      ? "bg-green-50 text-green-700"
-      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900");
+      ? "bg-emerald-50 text-emerald-800 font-bold border-l-4 border-emerald-600 shadow-2xs"
+      : "text-slate-600 hover:bg-emerald-50/50 hover:text-emerald-700");
 
   const sidebarWidthClass = sidebarCollapsed ? "md:w-20" : "md:w-64";
   const contentOffsetClass = sidebarCollapsed ? "md:pl-20" : "md:pl-64";
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="relative min-h-screen bg-[#e8f3ec] text-slate-900">
+      {/* Background accents & subtle ambient glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+        {/* Top-right emerald ambient orb */}
+        <div className="absolute -top-32 -right-32 h-[550px] w-[550px] rounded-full bg-gradient-to-br from-emerald-500/20 via-green-400/10 to-transparent blur-3xl" />
+        {/* Bottom-left mint/teal ambient orb */}
+        <div className="absolute top-1/2 -left-32 h-[600px] w-[600px] rounded-full bg-gradient-to-tr from-teal-500/15 via-emerald-400/10 to-transparent blur-3xl" />
+        {/* Subtle geometric dot pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: "radial-gradient(#059669 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+      </div>
       {mobileMenuOpen && (
         <button
           type="button"
           aria-label="Đóng menu"
           onClick={closeMobileMenu}
-          className="fixed inset-0 z-40 bg-gray-900/40 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden"
         />
       )}
 
       {/* Sidebar bên trái */}
       <aside
         className={
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white shadow-sm transition-[width,transform] duration-200 md:translate-x-0 " +
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200/90 bg-white shadow-xs transition-[width,transform] duration-200 md:translate-x-0 " +
           sidebarWidthClass +
           " " +
           (mobileMenuOpen ? "translate-x-0" : "-translate-x-full")
@@ -189,7 +204,7 @@ export function AdminLayout() {
       >
         <div
           className={
-            "flex h-16 shrink-0 items-center border-b border-gray-200 px-5 " +
+            "flex h-16 shrink-0 items-center border-b border-slate-200/80 px-5 " +
             (sidebarCollapsed ? "md:justify-center md:px-0" : "")
           }
         >
@@ -199,27 +214,28 @@ export function AdminLayout() {
             title={sidebarCollapsed ? "SportCourt" : undefined}
             className="flex items-center gap-3"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-700 via-emerald-600 to-green-500 text-white shadow-md shadow-emerald-600/25">
               <svg
                 className="h-5 w-5"
-                fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+                fill="none"
                 aria-hidden="true"
               >
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="12" y1="5" x2="12" y2="19" />
+                <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" strokeWidth="1.8" />
+                <line x1="12" y1="5" x2="12" y2="19" stroke="white" strokeWidth="1.5" />
+                <line x1="2" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.5" />
+                <ellipse cx="7" cy="12" rx="2" ry="3.5" stroke="white" strokeWidth="1.1" />
+                <ellipse cx="17" cy="12" rx="2" ry="3.5" stroke="white" strokeWidth="1.1" />
               </svg>
             </span>
-            <span
-              className={
-                "text-lg font-bold tracking-tight text-gray-900 " +
-                (sidebarCollapsed ? "md:hidden" : "")
-              }
-            >
-              SportCourt
-            </span>
+            <div className={sidebarCollapsed ? "md:hidden" : ""}>
+              <span className="block text-base font-extrabold tracking-tight text-slate-900">
+                SportCourt
+              </span>
+              <span className="block text-[11px] font-medium text-emerald-600 leading-none">
+                Quản lý sân thể thao
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -479,21 +495,21 @@ export function AdminLayout() {
                 onClick={closeMobileMenu}
                 aria-current={isProfile ? "page" : undefined}
                 className={
-                  "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition sm:px-3 " +
+                  "flex items-center gap-2.5 rounded-xl border px-3 py-1.5 transition-all shadow-2xs " +
                   (isProfile
-                    ? "border-green-200 bg-green-50"
-                    : "border-gray-200 bg-gray-50 hover:bg-gray-100")
+                    ? "border-emerald-300 bg-emerald-50/80 ring-2 ring-emerald-500/10"
+                    : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40")
                 }
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-700 to-green-500 text-xs font-bold text-white shadow-xs">
                   {session?.fullName
                     ? session.fullName.charAt(0).toUpperCase()
                     : "U"}
                 </span>
-                <span className="hidden max-w-32 truncate text-sm font-medium text-gray-800 sm:inline">
+                <span className="hidden max-w-36 truncate text-sm font-semibold text-slate-800 sm:inline">
                   {session?.fullName}
                 </span>
-                <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-800">
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-emerald-700">
                   {session?.role}
                 </span>
               </Link>
@@ -501,7 +517,7 @@ export function AdminLayout() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-lg border border-gray-300 px-2.5 py-2 text-xs font-semibold text-gray-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 sm:px-3"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 shadow-2xs"
               >
                 Đăng xuất
               </button>

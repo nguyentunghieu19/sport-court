@@ -201,25 +201,25 @@ export function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
       {/* ── BẢNG TÌM KIẾM & BỘ LỌC ── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
         {/* Tiêu đề & Làm mới */}
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Tra cứu &amp; Quản lý cụm sân
             </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Tra cứu nhanh thông tin cụm sân, tình trạng mở cửa và lịch sân trực thuộc
+            <p className="mt-1 text-sm text-slate-500">
+              Tra cứu nhanh thông tin cụm sân thể thao, tình trạng mở cửa và lịch sân trực thuộc
             </p>
           </div>
           <button
             type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800 disabled:opacity-50"
           >
             <svg
-              className={`h-4 w-4 text-gray-500 ${loading ? "animate-spin" : ""}`}
+              className={`h-4 w-4 text-emerald-600 ${loading ? "animate-spin" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth="2"
@@ -237,7 +237,7 @@ export function DashboardPage() {
 
         {/* Ô tìm kiếm */}
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
             <svg
               className="h-5 w-5"
               fill="none"
@@ -253,14 +253,14 @@ export function DashboardPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm theo tên cụm sân, quận huyện, địa chỉ, số điện thoại, tên sân..."
-            className="w-full rounded-xl border border-gray-300 py-3 pl-11 pr-10 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+            placeholder="Tìm theo tên cụm sân, quận huyện, địa chỉ, số điện thoại, tên sân con..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-3 pl-11 pr-10 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600"
               title="Xóa tìm kiếm"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -271,10 +271,10 @@ export function DashboardPage() {
         </div>
 
         {/* Các hàng bộ lọc */}
-        <div className="mt-5 space-y-4 border-t border-gray-100 pt-5">
+        <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
           {/* Lọc trạng thái */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <span className="w-28 shrink-0 text-sm font-semibold text-gray-700">
+            <span className="w-28 shrink-0 text-sm font-semibold text-slate-700">
               Trạng thái:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -285,13 +285,13 @@ export function DashboardPage() {
                     key={opt.key}
                     type="button"
                     onClick={() => setSelectedStatus(opt.key)}
-                    className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition ${isSelected
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${isSelected
                         ? opt.key === "ACTIVE"
-                          ? "bg-emerald-600 text-white shadow-xs"
+                          ? "bg-gradient-to-r from-emerald-600 to-green-500 text-white shadow-xs"
                           : opt.key === "INACTIVE"
                             ? "bg-rose-600 text-white shadow-xs"
-                            : "bg-gray-900 text-white shadow-xs"
-                        : "border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                            : "bg-emerald-800 text-white shadow-xs"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40 hover:text-emerald-800"
                       }`}
                   >
                     {opt.label}
@@ -303,7 +303,7 @@ export function DashboardPage() {
 
           {/* Lọc môn thể thao */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <span className="w-28 shrink-0 pt-1 text-sm font-semibold text-gray-700">
+            <span className="w-28 shrink-0 pt-2 text-sm font-semibold text-slate-700">
               Môn thể thao:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -326,17 +326,17 @@ export function DashboardPage() {
                     type="button"
                     onClick={() => setSelectedSport(sport.key)}
                     disabled={loading}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition ${isSelected
-                        ? "bg-emerald-600 text-white shadow-xs"
-                        : "border border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100"
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition ${isSelected
+                        ? "bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-600 text-white shadow-xs"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40 hover:text-emerald-800"
                       } disabled:opacity-60`}
                   >
                     <span>{sport.label}</span>
                     {count > 0 && sport.key !== "ALL" && (
                       <span
-                        className={`rounded-md px-1.5 py-0.2 text-xs font-semibold ${isSelected
-                            ? "bg-emerald-700 text-white"
-                            : "bg-gray-200 text-gray-700"
+                        className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${isSelected
+                            ? "bg-white/20 text-white"
+                            : "bg-emerald-50 text-emerald-800 border border-emerald-200/60"
                           }`}
                       >
                         {count}
@@ -351,9 +351,9 @@ export function DashboardPage() {
 
         {/* Thanh trạng thái bộ lọc đang kích hoạt */}
         {hasActiveFilters && (
-          <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950">
             <div>
-              Hiển thị <strong>{filteredVenues.length}</strong> / {venues.length} cụm sân
+              Đang lọc: tìm thấy <strong>{filteredVenues.length}</strong> / {venues.length} cụm sân
               {selectedSport !== "ALL" && (
                 <>
                   {" "}
@@ -379,9 +379,9 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={clearAllFilters}
-              className="ml-3 shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+              className="ml-3 shrink-0 font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
             >
-              Xóa bộ lọc
+              Xóa tất cả bộ lọc
             </button>
           </div>
         )}
@@ -390,19 +390,19 @@ export function DashboardPage() {
       {/* ── DANH SÁCH CỤM SÂN ── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-lg font-bold text-gray-900">
+          <h2 className="text-lg font-bold text-slate-900">
             Danh sách cụm sân quản lý
           </h2>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm font-medium text-slate-500">
             {loading ? "Đang tải dữ liệu..." : `${filteredVenues.length} cụm sân`}
           </span>
         </div>
 
         {/* Loading state */}
         {loading && (
-          <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white p-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-gray-300 border-t-emerald-600" />
-            <p className="text-sm font-medium text-gray-500">
+          <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-emerald-600" />
+            <p className="text-sm font-medium text-slate-500">
               Đang tải danh sách cụm sân...
             </p>
           </div>
@@ -415,7 +415,7 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={handleRefresh}
-              className="mt-3 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+              className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
             >
               Thử tải lại
             </button>
@@ -424,17 +424,17 @@ export function DashboardPage() {
 
         {/* Empty state */}
         {!loading && !error && filteredVenues.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <circle cx="11" cy="11" r="8" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
               </svg>
             </div>
-            <p className="mt-3 text-base font-semibold text-gray-800">
+            <p className="mt-3 text-base font-bold text-slate-800">
               {hasActiveFilters ? "Không tìm thấy cụm sân phù hợp" : "Chưa có cụm sân nào"}
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-slate-500">
               {hasActiveFilters
                 ? "Thử thay đổi từ khóa hoặc xóa các điều kiện lọc."
                 : "Bấm 'Quản lý địa điểm' để tạo cụm sân mới."}
@@ -443,7 +443,7 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="mt-4 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Xóa tất cả bộ lọc
               </button>
@@ -492,33 +492,33 @@ export function DashboardPage() {
             return (
               <div
                 key={venue.id}
-                className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-gray-300 hover:shadow"
+                className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition hover:border-emerald-300 hover:shadow-md"
               >
                 {/* 1. Header cụm sân: Tên + Trạng thái */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2.5">
-                      <h3 className="text-xl font-bold text-gray-900">
+                      <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">
                         {venue.name}
                       </h3>
                       {districtCity && (
-                        <span className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-slate-500">
                           — {districtCity}
                         </span>
                       )}
-                      <span className="rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                      <span className="rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
                         {venueFieldsList.length} sân
                       </span>
                     </div>
 
                     {/* Địa chỉ, SĐT, Giờ mở cửa */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-y-1 gap-x-4 text-sm text-gray-600">
+                    <div className="mt-3 flex flex-wrap items-center gap-y-2 gap-x-5 text-sm text-slate-600">
                       <div className="flex items-center gap-1.5">
                         <svg
-                          className="h-4 w-4 shrink-0 text-gray-400"
+                          className="h-4 w-4 shrink-0 text-emerald-600"
                           fill="none"
                           viewBox="0 0 24 24"
-                          strokeWidth="1.5"
+                          strokeWidth="2"
                           stroke="currentColor"
                         >
                           <path
@@ -532,16 +532,16 @@ export function DashboardPage() {
                             d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
                           />
                         </svg>
-                        <span>{venue.address || "Chưa cập nhật địa chỉ"}</span>
+                        <span className="font-medium">{venue.address || "Chưa cập nhật địa chỉ"}</span>
                       </div>
 
                       {venue.phone && (
                         <div className="flex items-center gap-1.5">
                           <svg
-                            className="h-4 w-4 shrink-0 text-gray-400"
+                            className="h-4 w-4 shrink-0 text-emerald-600"
                             fill="none"
                             viewBox="0 0 24 24"
-                            strokeWidth="1.5"
+                            strokeWidth="2"
                             stroke="currentColor"
                           >
                             <path
@@ -550,16 +550,16 @@ export function DashboardPage() {
                               d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"
                             />
                           </svg>
-                          <span>{venue.phone}</span>
+                          <span className="font-medium">{venue.phone}</span>
                         </div>
                       )}
 
                       <div className="flex items-center gap-1.5">
                         <svg
-                          className="h-4 w-4 shrink-0 text-gray-400"
+                          className="h-4 w-4 shrink-0 text-emerald-600"
                           fill="none"
                           viewBox="0 0 24 24"
-                          strokeWidth="1.5"
+                          strokeWidth="2"
                           stroke="currentColor"
                         >
                           <path
@@ -568,7 +568,7 @@ export function DashboardPage() {
                             d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        <span>
+                        <span className="font-medium">
                           {venue.openingTime?.slice(0, 5) || "06:00"} –{" "}
                           {venue.closingTime?.slice(0, 5) || "23:00"}
                         </span>
@@ -577,7 +577,7 @@ export function DashboardPage() {
 
                     {/* Mô tả */}
                     {venue.description && (
-                      <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                      <p className="mt-2 text-sm text-slate-500 line-clamp-2">
                         {venue.description}
                       </p>
                     )}
@@ -586,13 +586,13 @@ export function DashboardPage() {
                   {/* Trạng thái mở cửa */}
                   <div className="shrink-0 sm:text-right">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isOpen
-                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20"
-                          : "bg-rose-50 text-rose-700 ring-1 ring-rose-600/20"
+                      className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-bold ${isOpen
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200 ring-2 ring-emerald-500/10"
+                          : "bg-rose-50 text-rose-700 border border-rose-200 ring-2 ring-rose-500/10"
                         }`}
                     >
                       <span
-                        className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"
+                        className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
                           }`}
                       />
                       {isOpen ? "Đang mở cửa" : "Tạm đóng cửa"}
@@ -602,17 +602,19 @@ export function DashboardPage() {
 
                 {/* 2. Môn thể thao hỗ trợ */}
                 {availableSports.length > 0 && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500">Môn hỗ trợ:</span>
+                  <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Môn hỗ trợ:
+                    </span>
                     {availableSports.map((sport) => {
                       const isFiltered =
                         selectedSport !== "ALL" && sport.toUpperCase() === selectedSport;
                       return (
                         <span
                           key={sport}
-                          className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${isFiltered
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-gray-100 text-gray-700"
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${isFiltered
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : "bg-slate-100 text-slate-700 border border-slate-200/70"
                             }`}
                         >
                           {getSportLabel(sport)}
@@ -624,9 +626,9 @@ export function DashboardPage() {
 
                 {/* 3. Xem nhanh danh sách sân con (Tối đa 4 sân) */}
                 {venueFieldsList.length > 0 && (
-                  <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="text-sm font-bold text-gray-800">
+                      <span className="text-sm font-bold text-slate-800">
                         {selectedSport === "ALL"
                           ? `Danh sách sân thi đấu (${venueFieldsList.length})`
                           : `Sân môn ${sportLabel} (${displayFields.length}/${venueFieldsList.length})`}
@@ -643,24 +645,24 @@ export function DashboardPage() {
                         {displayFields.slice(0, 4).map((field) => (
                           <div
                             key={field.id}
-                            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 shadow-xs"
+                            className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs hover:border-emerald-300 transition"
                           >
-                            <div className="min-w-0 flex-1 pr-2">
+                            <div className="min-w-0 flex-1 pr-3">
                               <div className="flex items-center gap-2">
-                                <span className="truncate text-sm font-semibold text-gray-900">
+                                <span className="truncate text-sm font-bold text-slate-900">
                                   {field.name}
                                 </span>
-                                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                <span className="rounded-md bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                                   {getSportLabel(field.sportType)}
                                 </span>
                               </div>
-                              <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                 <span
-                                  className={`font-medium ${field.status === "ACTIVE"
-                                      ? "text-emerald-600"
+                                  className={`font-semibold ${field.status === "ACTIVE"
+                                      ? "text-emerald-700"
                                       : field.status === "MAINTENANCE"
                                         ? "text-amber-600"
-                                        : "text-gray-400"
+                                        : "text-slate-400"
                                     }`}
                                 >
                                   {field.status === "ACTIVE"
@@ -683,11 +685,11 @@ export function DashboardPage() {
                     ) : null}
 
                     {displayFields.length > 4 && (
-                      <div className="mt-2.5 text-center">
+                      <div className="mt-3 text-center">
                         <button
                           type="button"
                           onClick={() => handleOpenVenueDetails(venue)}
-                          className="text-xs font-semibold text-emerald-700 hover:underline"
+                          className="text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
                         >
                           + Xem thêm {displayFields.length - 4} sân khác trong cụm
                         </button>
@@ -697,30 +699,30 @@ export function DashboardPage() {
                 )}
 
                 {/* 4. Footer: Mức giá & Nút thao tác */}
-                <div className="mt-5 flex flex-col items-start justify-between gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center">
-                  <div className="text-sm text-gray-700">
+                <div className="mt-5 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center">
+                  <div className="text-sm font-medium text-slate-600">
                     Giá tham khảo:{" "}
-                    <span className="text-base font-bold text-emerald-700">
+                    <span className="text-base font-extrabold text-emerald-700">
                       {priceText}
                     </span>
                   </div>
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                  <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto">
                     <Link
                       to={`/venues/${venue.id}?tab=policy`}
-                      className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-xs transition hover:bg-gray-50 hover:text-gray-900"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800"
                     >
                       Chính sách cọc
                     </Link>
                     <Link
                       to={`/venues/${venue.id}`}
-                      className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-xs transition hover:bg-gray-50 hover:text-gray-900"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800"
                     >
                       Quản lý
                     </Link>
                     <button
                       type="button"
                       onClick={() => handleOpenVenueDetails(venue)}
-                      className="flex-1 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-gray-800 sm:flex-initial"
+                      className="flex-1 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 hover:from-emerald-800 hover:to-green-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-emerald-700/25 transition active:scale-[0.99] sm:flex-initial"
                     >
                       Xem chi tiết &amp; Lịch trống
                     </button>
@@ -733,22 +735,22 @@ export function DashboardPage() {
 
       {/* ── MODAL CHI TIẾT CỤM SÂN ── */}
       {selectedVenue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-2xs">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-6 shadow-2xl">
             {/* Header modal */}
-            <div className="flex shrink-0 items-start justify-between border-b border-gray-100 pb-4">
+            <div className="flex shrink-0 items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-slate-900">
                   {selectedVenue.name}
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-slate-500">
                   {selectedVenue.address}, {selectedVenue.district}, {selectedVenue.city}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedVenue(null)}
-                className="ml-4 text-gray-400 hover:text-gray-600"
+                className="ml-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -758,16 +760,16 @@ export function DashboardPage() {
 
             {/* Nội dung modal */}
             <div className="flex-1 space-y-4 overflow-y-auto py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 p-3.5 text-sm text-gray-700">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50/50 border border-emerald-100 p-4 text-sm text-slate-700">
                 <div>
                   Giờ mở cửa:{" "}
-                  <strong>
+                  <strong className="text-slate-900">
                     {selectedVenue.openingTime?.slice(0, 5)} –{" "}
                     {selectedVenue.closingTime?.slice(0, 5)}
                   </strong>
                 </div>
                 <div>
-                  Hotline: <strong>{selectedVenue.phone || "Chưa cập nhật"}</strong>
+                  Hotline: <strong className="text-slate-900">{selectedVenue.phone || "Chưa cập nhật"}</strong>
                 </div>
                 <div>
                   Trạng thái:{" "}
@@ -778,15 +780,15 @@ export function DashboardPage() {
               </div>
 
               {selectedVenue.description && (
-                <div className="text-sm text-gray-600">
-                  <p className="font-semibold text-gray-800">Giới thiệu cụm sân:</p>
-                  <p className="mt-1 text-gray-600 leading-relaxed">{selectedVenue.description}</p>
+                <div className="text-sm text-slate-600">
+                  <p className="font-bold text-slate-800">Giới thiệu cụm sân:</p>
+                  <p className="mt-1 text-slate-600 leading-relaxed">{selectedVenue.description}</p>
                 </div>
               )}
 
               {/* Danh sách tất cả sân */}
-              <div className="border-t border-gray-100 pt-3">
-                <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-800">
+              <div className="border-t border-slate-100 pt-3">
+                <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-800">
                   Danh sách sân trực thuộc ({venueFields.length} sân)
                 </h4>
 
@@ -801,7 +803,7 @@ export function DashboardPage() {
                 )}
 
                 {!loadingFields && !fieldError && venueFields.length === 0 && (
-                  <p className="py-6 text-center text-sm text-gray-500">
+                  <p className="py-6 text-center text-sm text-slate-500">
                     Cụm sân này hiện chưa thiết lập sân thi đấu nào.
                   </p>
                 )}
@@ -811,18 +813,18 @@ export function DashboardPage() {
                     {venueFields.map((field) => (
                       <div
                         key={field.id}
-                        className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-emerald-300 transition"
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-base font-bold text-gray-900">
+                            <span className="text-base font-bold text-slate-900">
                               {field.name}
                             </span>
-                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                            <span className="rounded-md bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                               {getSportLabel(field.sportType)}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-gray-500">
+                          <p className="mt-1 text-sm text-slate-500">
                             {field.description || "Sân tiêu chuẩn"}
                             {field.capacity ? ` · Sức chứa: ${field.capacity} người` : ""}
                           </p>
@@ -833,10 +835,10 @@ export function DashboardPage() {
                           </div>
                           <span
                             className={`text-xs font-semibold ${field.status === "ACTIVE"
-                                ? "text-emerald-600"
+                                ? "text-emerald-700"
                                 : field.status === "MAINTENANCE"
                                   ? "text-amber-600"
-                                  : "text-gray-400"
+                                  : "text-slate-400"
                               }`}
                           >
                             {field.status === "ACTIVE"
@@ -854,17 +856,17 @@ export function DashboardPage() {
             </div>
 
             {/* Footer modal */}
-            <div className="flex shrink-0 items-center justify-between border-t border-gray-100 pt-4">
-              <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center justify-between border-t border-slate-100 pt-4">
+              <div className="flex items-center gap-2.5">
                 <Link
                   to={`/venues/${selectedVenue.id}?tab=fields`}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-700"
+                  className="rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 px-4 py-2.5 text-sm font-bold text-white shadow-xs transition hover:from-emerald-800 hover:to-green-600"
                 >
                   Quản lý sân
                 </Link>
                 <Link
                   to={`/venues/${selectedVenue.id}?tab=policy`}
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800"
                 >
                   Chính sách cọc
                 </Link>
@@ -872,7 +874,7 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setSelectedVenue(null)}
-                className="rounded-xl bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 Đóng
               </button>

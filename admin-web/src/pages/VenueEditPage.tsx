@@ -121,6 +121,44 @@ export function VenueEditPage() {
   const [policyFullPaymentRefundable, setPolicyFullPaymentRefundable] = useState<boolean>(true);
   const [policyOwnerCancellationFullRefund, setPolicyOwnerCancellationFullRefund] = useState<boolean>(true);
 
+  // Modal Alert cảnh báo lỗi nhập liệu chính sách
+  const [policyAlertModal, setPolicyAlertModal] = useState<{
+    title: string;
+    message: string;
+    field?: "deposit" | "deadline" | "timeout";
+  } | null>(null);
+
+  // Tính toán lỗi nhập liệu tức thì (ngắn gọn, tránh rối mắt)
+  const depositValidationError = useMemo(() => {
+    if (policyDepositPercentage === "" || policyDepositPercentage === null || policyDepositPercentage === undefined) {
+      return "Vui lòng nhập tỷ lệ cọc";
+    }
+    const val = Number(policyDepositPercentage);
+    if (isNaN(val)) return "Phải là chữ số";
+    if (val < 10 || val > 100) return "Tỷ lệ cọc từ 10% - 100%";
+    return null;
+  }, [policyDepositPercentage]);
+
+  const deadlineValidationError = useMemo(() => {
+    if (policyCancellationDeadlineHours === "" || policyCancellationDeadlineHours === null || policyCancellationDeadlineHours === undefined) {
+      return "Vui lòng nhập hạn hủy";
+    }
+    const val = Number(policyCancellationDeadlineHours);
+    if (isNaN(val)) return "Phải là chữ số";
+    if (val < 0 || val > 720) return "Hạn hủy từ 0 - 720 giờ";
+    return null;
+  }, [policyCancellationDeadlineHours]);
+
+  const timeoutValidationError = useMemo(() => {
+    if (policyPaymentTimeoutMinutes === "" || policyPaymentTimeoutMinutes === null || policyPaymentTimeoutMinutes === undefined) {
+      return "Vui lòng nhập thời gian";
+    }
+    const val = Number(policyPaymentTimeoutMinutes);
+    if (isNaN(val)) return "Phải là chữ số";
+    if (val < 5 || val > 120) return "Thời gian từ 5 - 120 phút";
+    return null;
+  }, [policyPaymentTimeoutMinutes]);
+
   const {
     register,
     handleSubmit,
@@ -201,23 +239,42 @@ export function VenueEditPage() {
     setPolicyError(null);
     setPolicySuccess(null);
 
+    // 1. Kiểm tra tỷ lệ đặt cọc
+    if (depositValidationError) {
+      setPolicyError(`Tỷ lệ cọc không hợp lệ (${depositValidationError})`);
+      setPolicyAlertModal({
+        title: "Tỷ lệ cọc không hợp lệ",
+        message: "Tỷ lệ đặt cọc phải nằm trong khoảng từ 10% đến 100%.",
+        field: "deposit",
+      });
+      return;
+    }
+
+    // 2. Kiểm tra thời hạn hủy
+    if (deadlineValidationError) {
+      setPolicyError(`Hạn hủy không hợp lệ (${deadlineValidationError})`);
+      setPolicyAlertModal({
+        title: "Hạn hủy không hợp lệ",
+        message: "Hạn hủy trước giờ chơi phải từ 0 đến 720 giờ.",
+        field: "deadline",
+      });
+      return;
+    }
+
+    // 3. Kiểm tra thời gian giữ chỗ
+    if (timeoutValidationError) {
+      setPolicyError(`Thời gian giữ chỗ không hợp lệ (${timeoutValidationError})`);
+      setPolicyAlertModal({
+        title: "Thời gian giữ chỗ không hợp lệ",
+        message: "Thời gian giữ chỗ phải từ 5 đến 120 phút.",
+        field: "timeout",
+      });
+      return;
+    }
+
     const depositNum = Number(policyDepositPercentage);
-    if (isNaN(depositNum) || depositNum < 10 || depositNum > 100) {
-      setPolicyError("Tỷ lệ đặt cọc tối thiểu 10% và tối đa 100%");
-      return;
-    }
-
     const deadlineNum = Number(policyCancellationDeadlineHours);
-    if (isNaN(deadlineNum) || deadlineNum < 0 || deadlineNum > 720) {
-      setPolicyError("Hạn hủy không được âm và tối đa 720 giờ");
-      return;
-    }
-
     const timeoutNum = Number(policyPaymentTimeoutMinutes);
-    if (isNaN(timeoutNum) || timeoutNum < 5 || timeoutNum > 120) {
-      setPolicyError("Thời gian giữ chỗ tối thiểu 5 phút và tối đa 120 phút");
-      return;
-    }
 
     try {
       setSavingPolicy(true);
@@ -237,13 +294,28 @@ export function VenueEditPage() {
       setPolicyDepositRefundable(updated.depositRefundableOnCustomerCancel);
       setPolicyFullPaymentRefundable(updated.fullPaymentRefundableBeforeDeadline);
       setPolicyOwnerCancellationFullRefund(updated.ownerCancellationFullRefund);
-      setPolicySuccess("Đã lưu chính sách đặt sân thành công!");
+      setPolicySuccess(`Lưu chính sách đặt cọc & thanh toán thành công! (Tỷ lệ cọc: ${updated.depositPercentage}%, Hạn hủy: ${updated.cancellationDeadlineHours}h, Giữ chỗ: ${updated.paymentTimeoutMinutes} phút)`);
     } catch (err) {
-      setPolicyError(getErrorMessage(err));
+      const reason = getErrorMessage(err);
+      const failMsg = `Lưu chính sách thất bại. Lý do: ${reason}`;
+      setPolicyError(failMsg);
+      setPolicyAlertModal({
+        title: "Lưu chính sách thất bại",
+        message: `Hệ thống không thể lưu cấu hình này. Lý do từ máy chủ: ${reason}`,
+      });
     } finally {
       setSavingPolicy(false);
     }
   };
+
+  useEffect(() => {
+    if (policySuccess) {
+      const timer = setTimeout(() => {
+        setPolicySuccess(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [policySuccess]);
 
   const handleResetPolicyDefaults = () => {
     setPolicyDepositPercentage(30);
@@ -454,7 +526,7 @@ export function VenueEditPage() {
           <button
             type="button"
             onClick={() => navigate("/venues")}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 hover:from-emerald-800 hover:to-green-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition"
           >
             ← Quay lại danh sách địa điểm
           </button>
@@ -544,13 +616,13 @@ export function VenueEditPage() {
         </div>
 
         {/* ── TABS ── */}
-        <div className="mt-5 flex border-b border-gray-200">
+        <div className="mt-5 flex border-b border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab("EDIT")}
             className={`relative px-4 py-2.5 text-sm font-semibold transition ${activeTab === "EDIT"
-              ? "text-green-700"
-              : "text-gray-500 hover:text-gray-900"
+              ? "text-emerald-700 font-bold"
+              : "text-slate-500 hover:text-slate-900"
               }`}
           >
             <span className="flex items-center gap-2">
@@ -560,7 +632,7 @@ export function VenueEditPage() {
               Sửa thông tin địa điểm
             </span>
             {activeTab === "EDIT" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-gradient-to-r from-emerald-600 to-green-500" />
             )}
           </button>
           <button
@@ -570,8 +642,8 @@ export function VenueEditPage() {
               fetchFields();
             }}
             className={`relative px-4 py-2.5 text-sm font-semibold transition ${activeTab === "FIELDS"
-              ? "text-green-700"
-              : "text-gray-500 hover:text-gray-900"
+              ? "text-emerald-700 font-bold"
+              : "text-slate-500 hover:text-slate-900"
               }`}
           >
             <span className="flex items-center gap-2">
@@ -581,12 +653,12 @@ export function VenueEditPage() {
                 <line x1="9" y1="21" x2="9" y2="9" />
               </svg>
               Danh sách sân con
-              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                 {fields.length}
               </span>
             </span>
             {activeTab === "FIELDS" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-gradient-to-r from-emerald-600 to-green-500" />
             )}
           </button>
           <button
@@ -596,8 +668,8 @@ export function VenueEditPage() {
               fetchPolicy();
             }}
             className={`relative px-4 py-2.5 text-sm font-semibold transition ${activeTab === "POLICY"
-              ? "text-green-700"
-              : "text-gray-500 hover:text-gray-900"
+              ? "text-emerald-700 font-bold"
+              : "text-slate-500 hover:text-slate-900"
               }`}
           >
             <span className="flex items-center gap-2">
@@ -607,7 +679,7 @@ export function VenueEditPage() {
               Chính sách đặt sân
             </span>
             {activeTab === "POLICY" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-gradient-to-r from-emerald-600 to-green-500" />
             )}
           </button>
         </div>
@@ -1115,12 +1187,36 @@ export function VenueEditPage() {
       {/* ══════════════ TAB 3: CHÍNH SÁCH ĐẶT SÂN (GET / PUT /api/owner/venues/{id}/policy) ══════════════ */}
       {activeTab === "POLICY" && (
         <div className="space-y-6">
+          {/* ── FLOATING TOAST THÔNG BÁO THÀNH CÔNG ── */}
+          {policySuccess && (
+            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 transition-all duration-300">
+              <div className="flex items-start gap-3 rounded-2xl border-2 border-emerald-400 bg-white p-4 shadow-2xl ring-4 ring-emerald-500/10">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-green-500 text-white shadow-xs">
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-sm font-extrabold text-emerald-900">Lưu chính sách thành công!</p>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{policySuccess}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPolicySuccess(null)}
+                  className="text-slate-400 hover:text-slate-700 p-1 rounded-lg text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 Chính sách đặt sân & Quy định thanh toán
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Thiết lập tỷ lệ cọc, thời hạn hủy, thời gian giữ chỗ và các quy tắc hoàn tiền áp dụng cho cụm "{venue.name}"
               </p>
             </div>
@@ -1129,10 +1225,10 @@ export function VenueEditPage() {
                 type="button"
                 onClick={fetchPolicy}
                 disabled={loadingPolicy || savingPolicy}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 disabled:opacity-50 shadow-2xs transition"
               >
                 <svg
-                  className={`h-3.5 w-3.5 ${loadingPolicy ? "animate-spin text-green-600" : ""}`}
+                  className={`h-3.5 w-3.5 ${loadingPolicy ? "animate-spin text-emerald-600" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1146,7 +1242,7 @@ export function VenueEditPage() {
                 type="button"
                 onClick={handleResetPolicyDefaults}
                 disabled={savingPolicy}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 transition"
               >
                 Đặt về mặc định
               </button>
@@ -1186,7 +1282,7 @@ export function VenueEditPage() {
               Đang tải chính sách đặt sân...
             </div>
           ) : (
-            <form onSubmit={handleSavePolicy} className="space-y-6">
+            <form noValidate onSubmit={handleSavePolicy} className="space-y-6">
               {/* KHỐI 1: TỶ LỆ CỌC, HẠN HỦY, THỜI GIAN GIỮ CHỖ */}
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
                 <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
@@ -1195,99 +1291,159 @@ export function VenueEditPage() {
 
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                   {/* Trường 1: depositPercentage */}
-                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                  <div className={`rounded-xl border p-4 transition ${
+                    depositValidationError
+                      ? "border-rose-300 bg-rose-50/20"
+                      : "border-gray-200 bg-gray-50/50 focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100"
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-gray-800">
+                      <label htmlFor="policy-deposit-input" className="block text-xs font-bold text-gray-800">
                         Tỷ lệ đặt cọc (%) <span className="text-red-500">*</span>
                       </label>
-                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        depositValidationError
+                          ? "bg-rose-100 text-rose-800 border border-rose-300"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}>
                         10% - 100%
                       </span>
                     </div>
                     <div className="relative mt-2">
                       <input
+                        id="policy-deposit-input"
                         type="number"
-                        min={10}
-                        max={100}
-                        step={1}
-                        required
                         value={policyDepositPercentage}
                         onChange={(e) => setPolicyDepositPercentage(e.target.value)}
                         placeholder="30"
                         disabled={savingPolicy}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                        className={`w-full rounded-lg border px-3.5 py-2.5 text-sm font-semibold transition focus:outline-none disabled:opacity-50 ${
+                          depositValidationError
+                            ? "border-rose-500 bg-white text-rose-950 ring-2 ring-rose-200 focus:border-rose-600 focus:ring-rose-300"
+                            : "border-gray-300 bg-white text-gray-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        }`}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
                         %
                       </span>
                     </div>
-                    <p className="mt-2 text-[11px] text-gray-500">
-                      Tỷ lệ phần trăm tiền cọc khách cần thanh toán khi tạo đơn đặt chỗ.
-                    </p>
+
+                    {/* Alert lỗi tức thì nếu nhập không đúng */}
+                    {depositValidationError ? (
+                      <div className="mt-2.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-700 animate-in fade-in">
+                        <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="leading-tight">{depositValidationError}</span>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Tỷ lệ phần trăm tiền cọc khách cần thanh toán khi tạo đơn đặt chỗ.
+                      </p>
+                    )}
                   </div>
 
                   {/* Trường 2: cancellationDeadlineHours */}
-                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                  <div className={`rounded-xl border p-4 transition ${
+                    deadlineValidationError
+                      ? "border-rose-300 bg-rose-50/20"
+                      : "border-gray-200 bg-gray-50/50 focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100"
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-gray-800">
+                      <label htmlFor="policy-deadline-input" className="block text-xs font-bold text-gray-800">
                         Hạn hủy trước giờ chơi <span className="text-red-500">*</span>
                       </label>
-                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        deadlineValidationError
+                          ? "bg-rose-100 text-rose-800 border border-rose-300"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
                         0 - 720 giờ
                       </span>
                     </div>
                     <div className="relative mt-2">
                       <input
+                        id="policy-deadline-input"
                         type="number"
-                        min={0}
-                        max={720}
-                        step={1}
-                        required
                         value={policyCancellationDeadlineHours}
                         onChange={(e) => setPolicyCancellationDeadlineHours(e.target.value)}
                         placeholder="24"
                         disabled={savingPolicy}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                        className={`w-full rounded-lg border px-3.5 py-2.5 text-sm font-semibold transition focus:outline-none disabled:opacity-50 ${
+                          deadlineValidationError
+                            ? "border-rose-500 bg-white text-rose-950 ring-2 ring-rose-200 focus:border-rose-600 focus:ring-rose-300"
+                            : "border-gray-300 bg-white text-gray-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        }`}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
                         giờ
                       </span>
                     </div>
-                    <p className="mt-2 text-[11px] text-gray-500">
-                      Số giờ tối thiểu khách phải thông báo hủy trước giờ bắt đầu để được xét hoàn tiền.
-                    </p>
+
+                    {/* Alert lỗi tức thì nếu nhập không đúng */}
+                    {deadlineValidationError ? (
+                      <div className="mt-2.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-700 animate-in fade-in">
+                        <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="leading-tight">{deadlineValidationError}</span>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Số giờ tối thiểu khách phải thông báo hủy trước giờ bắt đầu để được xét hoàn tiền.
+                      </p>
+                    )}
                   </div>
 
                   {/* Trường 3: paymentTimeoutMinutes */}
-                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition focus-within:border-green-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-100">
+                  <div className={`rounded-xl border p-4 transition ${
+                    timeoutValidationError
+                      ? "border-rose-300 bg-rose-50/20"
+                      : "border-gray-200 bg-gray-50/50 focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100"
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-gray-800">
+                      <label htmlFor="policy-timeout-input" className="block text-xs font-bold text-gray-800">
                         Thời gian giữ chỗ <span className="text-red-500">*</span>
                       </label>
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        timeoutValidationError
+                          ? "bg-rose-100 text-rose-800 border border-rose-300"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
                         5 - 120 phút
                       </span>
                     </div>
                     <div className="relative mt-2">
                       <input
+                        id="policy-timeout-input"
                         type="number"
-                        min={5}
-                        max={120}
-                        step={1}
-                        required
                         value={policyPaymentTimeoutMinutes}
                         onChange={(e) => setPolicyPaymentTimeoutMinutes(e.target.value)}
                         placeholder="15"
                         disabled={savingPolicy}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600 disabled:opacity-50"
+                        className={`w-full rounded-lg border px-3.5 py-2.5 text-sm font-semibold transition focus:outline-none disabled:opacity-50 ${
+                          timeoutValidationError
+                            ? "border-rose-500 bg-white text-rose-950 ring-2 ring-rose-200 focus:border-rose-600 focus:ring-rose-300"
+                            : "border-gray-300 bg-white text-gray-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        }`}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-gray-400">
                         phút
                       </span>
                     </div>
-                    <p className="mt-2 text-[11px] text-gray-500">
-                      Thời gian đếm ngược giữ chỗ chờ thanh toán trước khi đơn tự động hủy.
-                    </p>
+
+                    {/* Alert lỗi tức thì nếu nhập không đúng */}
+                    {timeoutValidationError ? (
+                      <div className="mt-2.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-700 animate-in fade-in">
+                        <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="leading-tight">{timeoutValidationError}</span>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Thời gian đếm ngược giữ chỗ chờ thanh toán trước khi đơn tự động hủy.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1300,12 +1456,12 @@ export function VenueEditPage() {
 
                 <div className="space-y-4">
                   {/* Switch 1: depositRefundableOnCustomerCancel */}
-                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:bg-slate-50/70">
                     <div className="space-y-1">
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-slate-900">
                         Hoàn tiền cọc khi khách hủy
                       </span>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500">
                         Cho phép hoàn lại tiền đặt cọc cho khách hàng nếu khách chủ động hủy đơn trước hạn quy định.
                       </p>
                     </div>
@@ -1316,8 +1472,8 @@ export function VenueEditPage() {
                       aria-checked={policyDepositRefundable}
                       onClick={() => setPolicyDepositRefundable(!policyDepositRefundable)}
                       disabled={savingPolicy}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
-                        policyDepositRefundable ? "bg-green-600" : "bg-gray-300"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyDepositRefundable ? "bg-gradient-to-r from-emerald-600 to-green-500 shadow-2xs" : "bg-slate-300"
                       }`}
                     >
                       <span
@@ -1329,12 +1485,12 @@ export function VenueEditPage() {
                   </div>
 
                   {/* Switch 2: fullPaymentRefundableBeforeDeadline */}
-                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:bg-slate-50/70">
                     <div className="space-y-1">
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-slate-900">
                         Hoàn tiền thanh toán toàn bộ trước hạn hủy
                       </span>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500">
                         Cho phép hoàn 100% số tiền nếu khách đã thanh toán toàn bộ đơn đặt sân và hủy trước hạn quy định.
                       </p>
                     </div>
@@ -1345,8 +1501,8 @@ export function VenueEditPage() {
                       aria-checked={policyFullPaymentRefundable}
                       onClick={() => setPolicyFullPaymentRefundable(!policyFullPaymentRefundable)}
                       disabled={savingPolicy}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
-                        policyFullPaymentRefundable ? "bg-green-600" : "bg-gray-300"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyFullPaymentRefundable ? "bg-gradient-to-r from-emerald-600 to-green-500 shadow-2xs" : "bg-slate-300"
                       }`}
                     >
                       <span
@@ -1358,12 +1514,12 @@ export function VenueEditPage() {
                   </div>
 
                   {/* Switch 3: ownerCancellationFullRefund */}
-                  <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4 transition hover:bg-gray-50/70">
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:bg-slate-50/70">
                     <div className="space-y-1">
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-slate-900">
                         Hoàn đầy đủ 100% khi chủ sân hủy
                       </span>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500">
                         Luôn hoàn lại đầy đủ toàn bộ số tiền cọc/thanh toán nếu phía chủ sân chủ động hủy lịch đặt của khách.
                       </p>
                     </div>
@@ -1374,8 +1530,8 @@ export function VenueEditPage() {
                       aria-checked={policyOwnerCancellationFullRefund}
                       onClick={() => setPolicyOwnerCancellationFullRefund(!policyOwnerCancellationFullRefund)}
                       disabled={savingPolicy}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-50 ${
-                        policyOwnerCancellationFullRefund ? "bg-green-600" : "bg-gray-300"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 ${
+                        policyOwnerCancellationFullRefund ? "bg-gradient-to-r from-emerald-600 to-green-500 shadow-2xs" : "bg-slate-300"
                       }`}
                     >
                       <span
@@ -1389,7 +1545,7 @@ export function VenueEditPage() {
               </div>
 
               {/* KHỐI 3: GHI CHÚ VẬN HÀNH & NÚT LƯU */}
-              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-800">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-900">
                 <div className="flex items-center gap-2 font-bold mb-1">
                   <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <circle cx="12" cy="12" r="10" />
@@ -1404,19 +1560,62 @@ export function VenueEditPage() {
                 </p>
               </div>
 
+              {/* THÔNG BÁO INLINE NGAY TRÊN NÚT LƯU */}
+              {policySuccess && (
+                <div className="flex items-start gap-3 rounded-2xl border-2 border-emerald-400 bg-emerald-50/90 p-4 shadow-sm">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-extrabold text-emerald-950">Lưu chính sách thành công!</p>
+                    <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed font-medium">{policySuccess}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPolicySuccess(null)}
+                    className="text-emerald-700 hover:text-emerald-900 text-xs font-bold p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {policyError && (
+                <div className="flex items-start gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50/90 p-4 shadow-sm">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-600 text-white">
+                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-extrabold text-rose-950">Lưu chính sách không thành công!</p>
+                    <p className="text-xs text-rose-800 mt-0.5 leading-relaxed font-semibold">{policyError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPolicyError(null)}
+                    className="text-rose-700 hover:text-rose-900 text-xs font-bold p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={fetchPolicy}
                   disabled={savingPolicy}
-                  className="rounded-xl border border-gray-300 px-5 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+                  className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400 disabled:opacity-40 shadow-2xs"
                 >
                   Hủy thay đổi
                 </button>
                 <button
                   type="submit"
                   disabled={savingPolicy}
-                  className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-green-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 px-7 py-3 text-sm font-extrabold text-white shadow-md shadow-emerald-600/30 transition-all hover:from-emerald-800 hover:to-green-600 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
                 >
                   {savingPolicy ? (
                     <>
@@ -1425,8 +1624,8 @@ export function VenueEditPage() {
                     </>
                   ) : (
                     <>
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path d="M5 13l4 4L19 7" />
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                       Lưu chính sách
                     </>
@@ -1754,6 +1953,49 @@ export function VenueEditPage() {
                 ) : (
                   "Xác nhận cập nhật"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════ MODAL ALERT CẢNH BÁO LỖI NHẬP LIỆU CHÍNH SÁCH ══════════════ */}
+      {policyAlertModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-2xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border-2 border-rose-300 bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 shadow-xs">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-extrabold text-slate-900">
+                  {policyAlertModal.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {policyAlertModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  const fieldToFocus = policyAlertModal.field;
+                  setPolicyAlertModal(null);
+                  if (fieldToFocus === "deposit") {
+                    document.getElementById("policy-deposit-input")?.focus();
+                  } else if (fieldToFocus === "deadline") {
+                    document.getElementById("policy-deadline-input")?.focus();
+                  } else if (fieldToFocus === "timeout") {
+                    document.getElementById("policy-timeout-input")?.focus();
+                  }
+                }}
+                className="rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/25 transition hover:from-rose-700 hover:to-rose-800"
+              >
+                OK
               </button>
             </div>
           </div>

@@ -229,14 +229,14 @@ export function VenuesPage() {
         </div>
 
         {/* ── TABS ── */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab("LIST")}
             className={`relative px-4 py-2.5 text-sm font-semibold transition ${
               activeTab === "LIST"
-                ? "text-green-700"
-                : "text-gray-500 hover:text-gray-900"
+                ? "text-emerald-700 font-bold"
+                : "text-slate-500 hover:text-slate-900"
             }`}
           >
             <span className="flex items-center gap-2">
@@ -245,13 +245,13 @@ export function VenuesPage() {
               </svg>
               Danh sách địa điểm
               {venues.length > 0 && (
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                   {venues.length}
                 </span>
               )}
             </span>
             {activeTab === "LIST" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-gradient-to-r from-emerald-600 to-green-500" />
             )}
           </button>
           <button
@@ -263,8 +263,8 @@ export function VenuesPage() {
             }}
             className={`relative px-4 py-2.5 text-sm font-semibold transition ${
               activeTab === "ADD"
-                ? "text-green-700"
-                : "text-gray-500 hover:text-gray-900"
+                ? "text-emerald-700 font-bold"
+                : "text-slate-500 hover:text-slate-900"
             }`}
           >
             <span className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export function VenuesPage() {
               Thêm địa điểm
             </span>
             {activeTab === "ADD" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-green-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-gradient-to-r from-emerald-600 to-green-500" />
             )}
           </button>
         </div>
@@ -309,7 +309,7 @@ export function VenuesPage() {
             <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
               {/* Ô tìm kiếm */}
               <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <circle cx="11" cy="11" r="8" />
                     <path d="M21 21l-4.35-4.35" />
@@ -320,13 +320,13 @@ export function VenuesPage() {
                   value={venueSearch}
                   onChange={(e) => setVenueSearch(e.target.value)}
                   placeholder="Tìm tên, địa chỉ, quận/huyện, SĐT..."
-                  className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-8 text-xs transition focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-8 text-xs text-slate-800 placeholder:text-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
                 />
                 {venueSearch && (
                   <button
                     type="button"
                     onClick={() => setVenueSearch("")}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   >
                     ✕
                   </button>
@@ -340,20 +340,20 @@ export function VenuesPage() {
                     key={s}
                     type="button"
                     onClick={() => setVenueStatusFilter(s)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                       venueStatusFilter === s
                         ? s === "ACTIVE"
-                          ? "bg-emerald-600 text-white"
+                          ? "bg-gradient-to-r from-emerald-600 to-green-500 text-white shadow-xs"
                           : s === "INACTIVE"
-                            ? "bg-red-500 text-white"
-                            : "bg-gray-800 text-white"
-                        : "border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                            ? "bg-rose-600 text-white shadow-xs"
+                            : "bg-emerald-800 text-white shadow-xs"
+                        : "border border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
                     }`}
                   >
                     {s === "ALL" ? "Tất cả" : s === "ACTIVE" ? "Hoạt động" : "Tạm ngưng"}
                   </button>
                 ))}
-                <span className="ml-1 text-xs font-medium text-gray-400">
+                <span className="ml-1 text-xs font-medium text-slate-400">
                   {filteredVenues.length}/{venues.length}
                 </span>
               </div>
@@ -463,12 +463,12 @@ export function VenuesPage() {
                   )}
 
                   {/* Nút hành động */}
-                  <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => openQuickAdd(venue)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-green-700"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:from-emerald-800 hover:to-green-600 hover:shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path d="M12 4v16m8-8H4" />
@@ -477,7 +477,7 @@ export function VenuesPage() {
                       </button>
                       <Link
                         to={`/venues/${venue.id}?tab=policy`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 shadow-2xs"
                       >
                         <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -486,7 +486,7 @@ export function VenuesPage() {
                       </Link>
                       <Link
                         to={`/venues/${venue.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 shadow-2xs"
                       >
                         Quản lý →
                       </Link>

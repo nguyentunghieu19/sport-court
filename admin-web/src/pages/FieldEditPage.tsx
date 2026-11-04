@@ -263,7 +263,7 @@ export function FieldEditPage() {
           <p className="mt-1 text-xs text-red-600">{pageError}</p>
           <Link
             to={venueId ? `/venues/${venueId}` : "/venues"}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 hover:from-emerald-800 hover:to-green-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition"
           >
             ← Quay lại địa điểm
           </Link>
@@ -531,7 +531,7 @@ export function FieldEditPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-xl bg-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 disabled:opacity-50"
+              className="rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-500 hover:from-emerald-800 hover:to-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition disabled:opacity-50"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
