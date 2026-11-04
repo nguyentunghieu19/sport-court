@@ -14,6 +14,7 @@ import com.court.backend.enums.BookingStatus;
 import com.court.backend.enums.PaymentStatus;
 import com.court.backend.enums.PaymentType;
 import com.court.backend.enums.RefundStatus;
+import com.court.backend.enums.UserRole;
 import com.court.backend.exception.ApiException;
 import com.court.backend.repository.BookingPolicyRepository;
 import com.court.backend.repository.BookingRepository;
@@ -36,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +47,9 @@ public class CancellationService {
     private static final int DEFAULT_CANCELLATION_DEADLINE_HOURS = 24;
     private static final DateTimeFormatter DISPLAY_TIME =
             DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(AppTime.ZONE);
+    // Yêu cầu hoàn tiền còn hiệu lực (chưa thất bại hoặc bị từ chối)
+    private static final Set<RefundStatus> ACTIVE_REFUND_STATUSES =
+            Set.of(RefundStatus.PENDING, RefundStatus.PROCESSING, RefundStatus.SUCCEEDED);
 
     // Điều khoản hủy áp dụng cho một đơn
     private record Terms(int deadlineHours, boolean depositRefundable, boolean fullPaymentRefundable) {
@@ -62,6 +68,9 @@ public class CancellationService {
     private final RefundRepository refundRepository;
     private final NotificationRepository notificationRepository;
     private final BookingPolicyRepository bookingPolicyRepository;
+    private final ManagerAccessService managerAccessService;
+
+    // ===== Phần của khách hàng =====
 
     @Transactional(readOnly = true)
     public CancellationPreviewResponse preview(Long userId, Long bookingId) {
@@ -85,13 +94,7 @@ public class CancellationService {
     @Transactional
     public CancelResultResponse cancelByCustomer(Long userId, Long bookingId, String reason) {
         Booking booking = findOwnBooking(userId, bookingId);
-
-        // Khóa các giao dịch rồi mới khóa đơn, cùng thứ tự với PaymentService để không khóa chéo nhau
-        List<Payment> payments = paymentRepository.findByBookingIdOrderByIdAsc(booking.getId());
-        for (Payment payment : payments) {
-            entityManager.refresh(payment, LockModeType.PESSIMISTIC_WRITE);
-        }
-        entityManager.refresh(booking, LockModeType.PESSIMISTIC_WRITE);
+        List<Payment> payments = lockPaymentsThenBooking(booking);
 
         List<Payment> succeeded = payments.stream()
                 .filter(p -> p.getStatus() == PaymentStatus.SUCCEEDED)
@@ -107,18 +110,8 @@ public class CancellationService {
                 ? "Khách hủy đơn"
                 : "Khách hủy đơn: " + reason.trim();
 
-        booking.setStatus(BookingStatus.CANCELLED);
-        booking.setCancelledAt(now);
-        booking.setCancelledBy(customer);
-        booking.setCancellationReason(cleanReason);
-
-        // Giao dịch còn đang chờ của đơn bị hủy; nếu khách vẫn trả sau đó, PaymentService sẽ tự tạo yêu cầu hoàn tiền
-        for (Payment payment : payments) {
-            if (payment.getStatus() == PaymentStatus.PENDING) {
-                payment.setStatus(PaymentStatus.FAILED);
-                payment.setFailureReason("Đơn đã bị hủy");
-            }
-        }
+        markCancelled(booking, customer, cleanReason, now);
+        failPendingPayments(payments);
 
         for (Payment payment : succeeded) {
             BigDecimal refundAmount = evaluation.refundByPayment().get(payment.getId());
@@ -139,6 +132,112 @@ public class CancellationService {
         }
         return new CancelResultResponse(
                 BookingResponse.from(booking), evaluation.paid(), evaluation.refund(), forfeited, message);
+    }
+
+    // ===== Phần của chủ sân và nhân viên: hủy đơn và hoàn toàn bộ =====
+
+    @Transactional
+    public CancelResultResponse cancelByManager(Long managerId, Long bookingId, String reason) {
+        User manager = managerAccessService.requireManager(managerId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn đặt sân"));
+        if (!managerAccessService.manageableVenueIds(manager).contains(booking.getField().getVenue().getId())) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn đặt sân");
+        }
+
+        List<Payment> payments = lockPaymentsThenBooking(booking);
+        Instant now = Instant.now();
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT && booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Đơn không thể hủy ở trạng thái hiện tại");
+        }
+        if (!booking.getEndAt().isAfter(now)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Đơn đã kết thúc, không thể hủy");
+        }
+
+        String roleLabel = manager.getRole() == UserRole.OWNER ? "Chủ sân" : "Nhân viên";
+        String cleanReason = roleLabel + " hủy đơn: " + reason.trim();
+
+        markCancelled(booking, manager, cleanReason, now);
+        failPendingPayments(payments);
+
+        List<Payment> succeeded = payments.stream()
+                .filter(p -> p.getStatus() == PaymentStatus.SUCCEEDED)
+                .toList();
+        Map<Long, BigDecimal> alreadyRequested = activeRefundTotals(succeeded);
+
+        BigDecimal paid = BigDecimal.ZERO;
+        BigDecimal refundTotal = BigDecimal.ZERO;
+        for (Payment payment : succeeded) {
+            paid = paid.add(payment.getAmount());
+            // Hoàn toàn bộ, trừ phần đã có yêu cầu hoàn tiền trước đó (ví dụ thanh toán trùng)
+            BigDecimal remaining = payment.getAmount()
+                    .subtract(alreadyRequested.getOrDefault(payment.getId(), BigDecimal.ZERO));
+            if (remaining.signum() > 0) {
+                createRefundRequest(payment, manager, remaining, cleanReason);
+                refundTotal = refundTotal.add(remaining);
+            }
+        }
+        bookingRepository.saveAndFlush(booking);
+
+        User customer = booking.getUser();
+        String customerMessage = "Đơn " + booking.getBookingCode() + " đã bị " + roleLabel.toLowerCase()
+                + " hủy. Lý do: " + reason.trim() + ".";
+        if (refundTotal.signum() > 0) {
+            customerMessage += " Chủ sân sẽ liên hệ qua số điện thoại để hoàn " + money(refundTotal) + ".";
+        }
+        saveNotification(customer, booking, "Đơn đặt sân đã bị hủy", customerMessage);
+
+        String contact = customer.getPhone() != null ? customer.getPhone() : customer.getEmail();
+        String message = "Đã hủy đơn " + booking.getBookingCode() + ".";
+        if (refundTotal.signum() > 0) {
+            message += " Đã tạo yêu cầu hoàn " + money(refundTotal) + " cho khách " + customer.getFullName()
+                    + " (" + contact + "). Hãy liên hệ khách để hoàn tiền rồi xác nhận trên hệ thống.";
+        }
+        return new CancelResultResponse(
+                BookingResponse.from(booking), paid, refundTotal, BigDecimal.ZERO, message);
+    }
+
+    // ===== Dùng chung =====
+
+    // Khóa các giao dịch rồi mới khóa đơn, cùng thứ tự với PaymentService để không khóa chéo nhau
+    private List<Payment> lockPaymentsThenBooking(Booking booking) {
+        List<Payment> payments = paymentRepository.findByBookingIdOrderByIdAsc(booking.getId());
+        for (Payment payment : payments) {
+            entityManager.refresh(payment, LockModeType.PESSIMISTIC_WRITE);
+        }
+        entityManager.refresh(booking, LockModeType.PESSIMISTIC_WRITE);
+        return payments;
+    }
+
+    private void markCancelled(Booking booking, User actor, String reason, Instant now) {
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(now);
+        booking.setCancelledBy(actor);
+        booking.setCancellationReason(reason);
+    }
+
+    // Giao dịch còn đang chờ của đơn bị hủy; nếu khách vẫn trả sau đó, PaymentService sẽ tự tạo yêu cầu hoàn tiền
+    private void failPendingPayments(List<Payment> payments) {
+        for (Payment payment : payments) {
+            if (payment.getStatus() == PaymentStatus.PENDING) {
+                payment.setStatus(PaymentStatus.FAILED);
+                payment.setFailureReason("Đơn đã bị hủy");
+            }
+        }
+    }
+
+    // Tổng số tiền đã có yêu cầu hoàn (còn hiệu lực) cho từng giao dịch
+    private Map<Long, BigDecimal> activeRefundTotals(List<Payment> payments) {
+        if (payments.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> paymentIds = payments.stream().map(Payment::getId).toList();
+        return refundRepository.findByPaymentIdIn(paymentIds).stream()
+                .filter(refund -> ACTIVE_REFUND_STATUSES.contains(refund.getStatus()))
+                .collect(Collectors.groupingBy(
+                        refund -> refund.getPayment().getId(),
+                        Collectors.reducing(BigDecimal.ZERO, Refund::getAmount, BigDecimal::add)));
     }
 
     private Booking findOwnBooking(Long userId, Long bookingId) {

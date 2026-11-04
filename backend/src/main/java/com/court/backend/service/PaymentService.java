@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +43,9 @@ public class PaymentService {
 
     private static final String PROVIDER = "VNPAY";
     private static final int MAX_PAGE_SIZE = 50;
+    // SỬA: các trạng thái cho biết tiền đã về thành công (kể cả sau khi đã hoàn một phần hoặc toàn bộ)
+    private static final Set<PaymentStatus> CONFIRMED_STATUSES = Set.of(
+            PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED, PaymentStatus.REFUNDED);
 
     // Kết quả xử lý: rspCode và message là phản hồi gửi lại cho VNPay (IPN); paid cho trang kết quả
     public record ProcessResult(String rspCode, String message, boolean paid, String bookingCode) {
@@ -140,7 +144,8 @@ public class PaymentService {
         Booking booking = bookingRepository.findById(payment.getBooking().getId()).orElseThrow();
         String bookingCode = booking.getBookingCode();
 
-        if (payment.getStatus() == PaymentStatus.SUCCEEDED) {
+        // SỬA: giao dịch đã thành công (kể cả đã hoàn tiền) thì không xử lý lại, tránh đặt lại trạng thái
+        if (CONFIRMED_STATUSES.contains(payment.getStatus())) {
             return new ProcessResult("02", "Order already confirmed", true, bookingCode);
         }
 

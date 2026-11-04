@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +16,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByBookingIdAndStatus(Long bookingId, PaymentStatus status);
 
     List<Payment> findByBookingIdOrderByIdAsc(Long bookingId);
+
+    List<Payment> findByBookingIdInAndStatusIn(Collection<Long> bookingIds, Collection<PaymentStatus> statuses);
 
     // Đã có giao dịch thành công khác cho cùng đơn (dùng để phát hiện thanh toán trùng)
     boolean existsByBookingIdAndStatusAndIdNot(Long bookingId, PaymentStatus status, Long id);

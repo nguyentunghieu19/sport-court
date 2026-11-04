@@ -4,15 +4,17 @@ import com.court.backend.entity.Booking;
 import com.court.backend.enums.BookingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
 
     // Các đơn của sân chồng lên khoảng [windowStart, windowEnd): bắt đầu trước windowEnd và kết thúc sau windowStart
     List<Booking> findByFieldIdAndStatusInAndStartAtLessThanAndEndAtGreaterThan(
@@ -33,4 +35,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @EntityGraph(attributePaths = {"field", "field.venue"})
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
+
+    // Tìm kiếm động cho chủ sân và nhân viên, nạp sẵn các quan hệ cần hiển thị
+    @Override
+    @EntityGraph(attributePaths = {"field", "field.venue", "user", "cancelledBy"})
+    Page<Booking> findAll(Specification<Booking> spec, Pageable pageable);
 }
