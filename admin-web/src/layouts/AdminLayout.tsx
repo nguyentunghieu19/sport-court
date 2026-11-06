@@ -25,6 +25,22 @@ function getBreadcrumb(pathname: string): BreadcrumbItem[] {
     return [{ label: "Địa điểm" }];
   }
 
+  if (pathname === "/bookings") {
+    return [{ label: "Đơn đặt sân" }];
+  }
+
+  const bookingDetailMatch = pathname.match(/^\/bookings\/(\d+)$/);
+  if (bookingDetailMatch) {
+    return [
+      { label: "Đơn đặt sân", to: "/bookings" },
+      { label: "Chi tiết đơn" },
+    ];
+  }
+
+  if (pathname === "/refunds") {
+    return [{ label: "Quản lý hoàn tiền" }];
+  }
+
   if (pathname === "/profile") {
     return [{ label: "Hồ sơ cá nhân" }];
   }
@@ -105,6 +121,8 @@ export function AdminLayout() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const isHome = location.pathname === "/";
   const isVenues = location.pathname.startsWith("/venues");
+  const isBookings = location.pathname.startsWith("/bookings");
+  const isRefunds = location.pathname.startsWith("/refunds");
   const isProfile = location.pathname === "/profile";
   const isPriceRules = /^\/venues\/\d+\/fields\/\d+\/price-rules$/.test(
     location.pathname,
@@ -285,37 +303,37 @@ export function AdminLayout() {
               Quản lý
             </h2>
             <div className="mt-2 space-y-1">
-              <Link
-                to="/venues"
-                onClick={closeMobileMenu}
-                title={sidebarCollapsed ? "Địa điểm" : undefined}
-                aria-current={isVenues ? "page" : undefined}
-                className={navItemClass(isVenues)}
-              >
-                <svg
-                  className="h-5 w-5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden="true"
+              {session?.role === "OWNER" && (
+                <Link
+                  to="/venues"
+                  onClick={closeMobileMenu}
+                  title={sidebarCollapsed ? "Địa điểm" : undefined}
+                  aria-current={isVenues ? "page" : undefined}
+                  className={navItemClass(isVenues)}
                 >
-                  <rect x="3" y="4" width="18" height="16" rx="2" />
-                  <path d="M3 9h18M8 4v5m8-5v5M7 13h3m4 0h3m-10 3h3m4 0h3" />
-                </svg>
-                <span className={sidebarCollapsed ? "md:hidden" : ""}>
-                  Địa điểm
-                </span>
-              </Link>
+                  <svg
+                    className="h-5 w-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="4" width="18" height="16" rx="2" />
+                    <path d="M3 9h18M8 4v5m8-5v5M7 13h3m4 0h3m-10 3h3m4 0h3" />
+                  </svg>
+                  <span className={sidebarCollapsed ? "md:hidden" : ""}>
+                    Địa điểm
+                  </span>
+                </Link>
+              )}
 
-              <button
-                type="button"
-                disabled
-                title="Tính năng quản lý lịch đặt sân sẽ có trong bài tiếp theo."
-                className={
-                  "flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-400 opacity-75 " +
-                  (sidebarCollapsed ? "md:justify-center md:px-2" : "")
-                }
+              <Link
+                to="/bookings"
+                onClick={closeMobileMenu}
+                title={sidebarCollapsed ? "Đơn đặt sân" : undefined}
+                aria-current={isBookings ? "page" : undefined}
+                className={navItemClass(isBookings)}
               >
                 <svg
                   className="h-5 w-5 shrink-0"
@@ -330,20 +348,32 @@ export function AdminLayout() {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                <span
-                  className={"flex-1 " + (sidebarCollapsed ? "md:hidden" : "")}
-                >
-                  Lịch đặt
+                <span className={sidebarCollapsed ? "md:hidden" : ""}>
+                  Đơn đặt sân
                 </span>
-                <span
-                  className={
-                    "rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500 " +
-                    (sidebarCollapsed ? "md:hidden" : "")
-                  }
+              </Link>
+
+              <Link
+                to="/refunds"
+                onClick={closeMobileMenu}
+                title={sidebarCollapsed ? "Quản lý hoàn tiền" : undefined}
+                aria-current={isRefunds ? "page" : undefined}
+                className={navItemClass(isRefunds)}
+              >
+                <svg
+                  className="h-5 w-5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
                 >
-                  Sắp có
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className={sidebarCollapsed ? "md:hidden" : ""}>
+                  Hoàn tiền
                 </span>
-              </button>
+              </Link>
 
               <button
                 type="button"
@@ -509,8 +539,15 @@ export function AdminLayout() {
                 <span className="hidden max-w-36 truncate text-sm font-semibold text-slate-800 sm:inline">
                   {session?.fullName}
                 </span>
-                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-emerald-700">
-                  {session?.role}
+                <span
+                  className={
+                    "rounded-full border px-2 py-0.5 text-[10px] font-extrabold tracking-wide " +
+                    (session?.role === "STAFF"
+                      ? "border-blue-200 bg-blue-50 text-blue-700"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700")
+                  }
+                >
+                  {session?.role === "STAFF" ? "NHÂN VIÊN" : session?.role === "OWNER" ? "CHỦ SÂN" : session?.role}
                 </span>
               </Link>
 

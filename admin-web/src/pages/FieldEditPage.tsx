@@ -70,8 +70,8 @@ type PageBreadcrumbContext = {
  *   - PATCH /api/owner/venues/{venueId}/fields/{id}/status   → Đổi trạng thái (hoạt động, ngừng hđ, bảo trì)
  */
 export function FieldEditPage() {
-  const { setPageBreadcrumbs } =
-    useOutletContext<PageBreadcrumbContext>();
+  const outletCtx = useOutletContext<PageBreadcrumbContext | null>();
+  const setPageBreadcrumbs = outletCtx?.setPageBreadcrumbs;
   const { venueId: paramVenueId, fieldId: paramFieldId } = useParams<{
     venueId: string;
     fieldId?: string;
@@ -164,7 +164,7 @@ export function FieldEditPage() {
   }, [venueId, fieldId, isEditMode, reset]);
 
   useEffect(() => {
-    if (!venue) return;
+    if (!venue || !setPageBreadcrumbs) return;
 
     setPageBreadcrumbs({
       pathname: isEditMode
@@ -184,7 +184,7 @@ export function FieldEditPage() {
       ],
     });
 
-    return () => setPageBreadcrumbs(null);
+    return () => setPageBreadcrumbs?.(null);
   }, [field, fieldId, isEditMode, setPageBreadcrumbs, venue, venueId]);
 
   // Submit Lưu (Thêm sân POST hoặc Sửa sân PUT)

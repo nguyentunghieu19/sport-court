@@ -69,7 +69,8 @@ function shortTime(value: string): string {
 }
 
 export function FieldPriceRulesPage() {
-  const { setPageBreadcrumbs } = useOutletContext<PageHeaderContext>();
+  const outletCtx = useOutletContext<PageHeaderContext | null>();
+  const setPageBreadcrumbs = outletCtx?.setPageBreadcrumbs;
   const params = useParams<{ venueId: string; fieldId: string }>();
   const venueId = Number(params.venueId);
   const fieldId = Number(params.fieldId);
@@ -135,7 +136,7 @@ export function FieldPriceRulesPage() {
   }, [fieldId, validIds, venueId]);
 
   useEffect(() => {
-    if (!field) return;
+    if (!field || !setPageBreadcrumbs) return;
 
     setPageBreadcrumbs({
       pathname: `/venues/${venueId}/fields/${fieldId}/price-rules`,
@@ -153,7 +154,7 @@ export function FieldPriceRulesPage() {
       ],
     });
 
-    return () => setPageBreadcrumbs(null);
+    return () => setPageBreadcrumbs?.(null);
   }, [field, fieldId, setPageBreadcrumbs, venue?.name, venueId]);
 
   function resetForm() {

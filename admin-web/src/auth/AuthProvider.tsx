@@ -5,8 +5,8 @@ import { AuthContext } from "./authContext";
 import type { AuthContextValue } from "./authContext";
 import { clearSession, getSession, saveSession } from "./sessionStore";
 
-// Các vai trò được vào trang quản trị (sẽ thêm STAFF khi làm phần nhân viên)
-const ALLOWED_ROLES = ["OWNER"];
+// Các vai trò được vào trang quản trị (Chủ sân và Nhân viên)
+const ALLOWED_ROLES = ["OWNER", "STAFF"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState(() => getSession());

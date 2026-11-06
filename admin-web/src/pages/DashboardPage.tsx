@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
+import { useAuth } from "../auth/authContext";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
 import type { FieldResponse, VenueResponse } from "../types/venue";
@@ -73,6 +74,12 @@ async function loadFieldsByVenue(
 }
 
 export function DashboardPage() {
+  const { session } = useAuth();
+
+  if (session?.role === "STAFF") {
+    return <Navigate to="/bookings" replace />;
+  }
+
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [fieldsByVenue, setFieldsByVenue] = useState<
     Record<number, FieldResponse[] | null>

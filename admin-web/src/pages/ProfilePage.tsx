@@ -191,7 +191,7 @@ export function ProfilePage() {
             TÀI KHOẢN CÁ NHÂN
           </h1>
           <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
-            {profile?.role === "OWNER" ? "CHỦ SÂN" : profile?.role}
+            {profile?.role === "OWNER" ? "CHỦ SÂN" : profile?.role === "STAFF" ? "NHÂN VIÊN" : profile?.role}
           </span>
         </div>
         <p className="mt-1 text-xs text-gray-500">

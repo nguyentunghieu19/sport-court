@@ -64,8 +64,8 @@ function SlotCard({ slot }: { slot: AvailabilitySlot }) {
 }
 
 export function FieldAvailabilityPage() {
-  const { setPageBreadcrumbs } =
-    useOutletContext<PageBreadcrumbContext>();
+  const outletCtx = useOutletContext<PageBreadcrumbContext | null>();
+  const setPageBreadcrumbs = outletCtx?.setPageBreadcrumbs;
   const params = useParams<{ venueId: string; fieldId: string }>();
   const venueId = Number(params.venueId);
   const fieldId = Number(params.fieldId);
@@ -109,7 +109,7 @@ export function FieldAvailabilityPage() {
   useEffect(() => {
     const fieldName = fieldInfo?.name ?? availability?.fieldName;
     const venueName = venueInfo?.name ?? availability?.venueName;
-    if (!fieldName || !venueName) return;
+    if (!fieldName || !venueName || !setPageBreadcrumbs) return;
 
     setPageBreadcrumbs({
       pathname: `/venues/${venueId}/fields/${fieldId}/availability`,
@@ -124,7 +124,7 @@ export function FieldAvailabilityPage() {
       ],
     });
 
-    return () => setPageBreadcrumbs(null);
+    return () => setPageBreadcrumbs?.(null);
   }, [
     availability?.fieldName,
     availability?.venueName,
@@ -134,6 +134,13 @@ export function FieldAvailabilityPage() {
     venueId,
     venueInfo?.name,
   ]);
+
+  // Tự động tải lịch hôm nay khi mở trang
+  useEffect(() => {
+    if (!validIds) return;
+    void handleViewSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldId, validIds]);
 
   async function handleViewSchedule() {
     setError(null);
