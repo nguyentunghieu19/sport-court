@@ -4,6 +4,7 @@ import com.court.sportcourt.data.remote.dto.CreatePaymentRequest
 import com.court.sportcourt.data.remote.dto.PageResponse
 import com.court.sportcourt.data.remote.dto.PaymentResponse
 import com.court.sportcourt.data.remote.dto.PaymentUrlResponse
+import com.court.sportcourt.data.remote.dto.RefundResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -28,4 +29,11 @@ interface PaymentApi {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 10
     ): Response<PageResponse<PaymentResponse>>
+
+    @GET("api/refunds/my")
+    suspend fun getMyRefunds(
+        @Query("bookingId") bookingId: Long? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<PageResponse<RefundResponse>>
 }

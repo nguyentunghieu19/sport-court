@@ -35,3 +35,17 @@ data class PaymentResponse(
     val failureReason: String? = null,
     val createdAt: String? = null
 )
+
+@Serializable
+data class RefundResponse(
+    val id: Long,
+    val paymentId: Long? = null,
+    val bookingId: Long? = null,
+    val bookingCode: String? = null,
+    val amount: Double = 0.0,
+    val reason: String? = null,
+    val status: String = "PENDING", // "PENDING", "SUCCEEDED", "REJECTED"
+    val referenceNote: String? = null,
+    val requestedAt: String? = null,
+    val completedAt: String? = null
+)

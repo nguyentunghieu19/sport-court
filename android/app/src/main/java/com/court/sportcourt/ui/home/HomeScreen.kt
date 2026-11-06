@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -114,7 +115,7 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            val unreadCount = uiState.mockNotifications.count { it.isUnread }
+            val unreadCount = uiState.notifications.count { it.isUnread }
             NavigationBar {
                 NavigationBarItem(
                     selected = uiState.currentTab == HomeTab.HOME,
@@ -205,7 +206,7 @@ fun HomeScreen(
                 }
 
                 HomeTab.NOTIFICATIONS -> NotificationsContentView(
-                    notifications = uiState.mockNotifications
+                    notifications = uiState.notifications
                 )
 
                 HomeTab.PROFILE -> {
@@ -652,35 +653,38 @@ private fun VenueCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = venue.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
 
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = "Quận: ${venue.district ?: ""}",
                         style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "📍 ${venue.address}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
@@ -688,12 +692,12 @@ private fun VenueCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
 
             if (venue.sportTypes.isNotEmpty()) {
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     venue.sportTypes.forEach { sportCode ->
                         val displayLabel = when (sportCode) {
@@ -711,6 +715,7 @@ private fun VenueCard(
                             Text(
                                 text = "🏆 $displayLabel",
                                 style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
@@ -720,6 +725,10 @@ private fun VenueCard(
                 Spacer(Modifier.height(12.dp))
             }
 
+            HorizontalDivider()
+
+            Spacer(Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -727,7 +736,7 @@ private fun VenueCard(
             ) {
                 Text(
                     text = if (formattedPrice != null) "Giá từ: $formattedPrice/giờ" else "Giá từ: Chưa có sân",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -736,7 +745,7 @@ private fun VenueCard(
                     text = "Xem chi tiết →",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -752,14 +761,26 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Thông báo 🔔",
+            text = "Thông báo hệ thống 🔔",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
         if (notifications.isEmpty()) {
-            Text("Bạn không có thông báo nào.")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("🔔 Bạn không có thông báo nào.", style = MaterialTheme.typography.titleMedium)
+                }
+            }
         } else {
             notifications.forEach { notif ->
                 Card(
@@ -768,32 +789,45 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
                         .padding(bottom = 12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (notif.isUnread)
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                         else
-                            MaterialTheme.colorScheme.surfaceVariant
+                            MaterialTheme.colorScheme.surface
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = notif.title,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f)
                             )
-                            Text(
-                                text = notif.time,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = notif.time,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
-                        Spacer(Modifier.height(6.dp))
+
+                        Spacer(Modifier.height(10.dp))
+
                         Text(
                             text = notif.message,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

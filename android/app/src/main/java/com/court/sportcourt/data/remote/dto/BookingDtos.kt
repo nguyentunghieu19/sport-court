@@ -38,3 +38,30 @@ data class BookingResponse(
 ) {
     val note: String? get() = customerNote
 }
+
+@Serializable
+data class CancellationPreviewResponse(
+    val bookingId: Long,
+    val bookingCode: String? = null,
+    val status: String? = null,
+    val canCancel: Boolean = false,
+    val cancelDeadlineAt: String? = null,
+    val paidAmount: Double = 0.0,
+    val refundAmount: Double = 0.0,
+    val forfeitedAmount: Double = 0.0,
+    val message: String? = null
+)
+
+@Serializable
+data class CancelBookingRequest(
+    val reason: String? = null
+)
+
+@Serializable
+data class CancelResultResponse(
+    val booking: BookingResponse? = null,
+    val paidAmount: Double = 0.0,
+    val refundAmount: Double = 0.0,
+    val forfeitedAmount: Double = 0.0,
+    val message: String? = null
+)

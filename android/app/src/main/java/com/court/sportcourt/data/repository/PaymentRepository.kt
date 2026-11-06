@@ -6,6 +6,7 @@ import com.court.sportcourt.data.remote.dto.CreatePaymentRequest
 import com.court.sportcourt.data.remote.dto.PageResponse
 import com.court.sportcourt.data.remote.dto.PaymentResponse
 import com.court.sportcourt.data.remote.dto.PaymentUrlResponse
+import com.court.sportcourt.data.remote.dto.RefundResponse
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
@@ -37,6 +38,14 @@ class PaymentRepository @Inject constructor(
         size: Int = 10
     ): ApiResult<PageResponse<PaymentResponse>> = handle {
         paymentApi.getMyPayments(page = page, size = size)
+    }
+
+    suspend fun getMyRefunds(
+        bookingId: Long? = null,
+        page: Int = 0,
+        size: Int = 20
+    ): ApiResult<PageResponse<RefundResponse>> = handle {
+        paymentApi.getMyRefunds(bookingId = bookingId, page = page, size = size)
     }
 
     private suspend fun <T> handle(call: suspend () -> Response<T>): ApiResult<T> {

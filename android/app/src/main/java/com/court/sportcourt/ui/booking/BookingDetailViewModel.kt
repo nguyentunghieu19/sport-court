@@ -4,8 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.court.sportcourt.data.remote.dto.BookingResponse
+import com.court.sportcourt.data.remote.dto.CancellationPreviewResponse
+import com.court.sportcourt.data.remote.dto.RefundResponse
 import com.court.sportcourt.data.repository.ApiResult
 import com.court.sportcourt.data.repository.BookingRepository
+import com.court.sportcourt.data.repository.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,15 +24,23 @@ import javax.inject.Inject
 data class BookingDetailUiState(
     val isLoading: Boolean = false,
     val booking: BookingResponse? = null,
+    val refundInfo: RefundResponse? = null,
     val remainingSeconds: Long = 0L,
     val formattedCountdown: String = "--:--",
     val isExpired: Boolean = false,
-    val errorMessage: String? = null
+    val isLoadingPreview: Boolean = false,
+    val cancellationPreview: CancellationPreviewResponse? = null,
+    val showCancelDialog: Boolean = false,
+    val cancelReason: String = "",
+    val isCancelling: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
 )
 
 @HiltViewModel
 class BookingDetailViewModel @Inject constructor(
     private val bookingRepository: BookingRepository,
+    private val paymentRepository: PaymentRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -56,6 +67,7 @@ class BookingDetailViewModel @Inject constructor(
                         )
                     }
                     startCountdownTimer(booking.expiresAt)
+                    loadRefundStatus()
                 }
                 is ApiResult.Error -> {
                     _uiState.update {
@@ -68,6 +80,86 @@ class BookingDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun loadRefundStatus() {
+        viewModelScope.launch {
+            when (val result = paymentRepository.getMyRefunds(bookingId = bookingId)) {
+                is ApiResult.Success -> {
+                    val refund = result.data.content.firstOrNull()
+                    _uiState.update { it.copy(refundInfo = refund) }
+                }
+                is ApiResult.Error -> {}
+            }
+        }
+    }
+
+    fun loadCancellationPreview() {
+        _uiState.update { it.copy(isLoadingPreview = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = bookingRepository.getCancellationPreview(bookingId)) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoadingPreview = false,
+                            cancellationPreview = result.data,
+                            showCancelDialog = true
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoadingPreview = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onCancelReasonChange(value: String) {
+        _uiState.update { it.copy(cancelReason = value) }
+    }
+
+    fun dismissCancelDialog() {
+        _uiState.update { it.copy(showCancelDialog = false, cancelReason = "") }
+    }
+
+    fun confirmCancelBooking() {
+        val state = _uiState.value
+        if (state.isCancelling) return
+
+        _uiState.update { it.copy(isCancelling = true, errorMessage = null) }
+        viewModelScope.launch {
+            val result = bookingRepository.cancelBooking(bookingId, state.cancelReason)
+            when (result) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isCancelling = false,
+                            showCancelDialog = false,
+                            cancelReason = "",
+                            successMessage = result.data.message ?: "Đã hủy đơn đặt sân thành công"
+                        )
+                    }
+                    loadBookingDetail()
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isCancelling = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
     private fun startCountdownTimer(expiresAtString: String?) {

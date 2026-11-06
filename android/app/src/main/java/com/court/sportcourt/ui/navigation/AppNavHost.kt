@@ -30,6 +30,8 @@ import com.court.sportcourt.ui.payment.PaymentOptionScreen
 import com.court.sportcourt.ui.payment.PaymentResultScreen
 import com.court.sportcourt.ui.payment.PaymentWebViewScreen
 import com.court.sportcourt.ui.profile.ProfileScreen
+import com.court.sportcourt.ui.staff.StaffBookingDetailScreen
+import com.court.sportcourt.ui.staff.StaffHomeScreen
 import com.court.sportcourt.ui.venue.VenueDetailScreen
 
 object Routes {
@@ -46,6 +48,8 @@ object Routes {
     const val PAYMENT_WEBVIEW = "payment_webview/{paymentId}"
     const val PAYMENT_RESULT = "payment_result/{paymentId}"
     const val PAYMENT_HISTORY = "payment_history"
+    const val STAFF_HOME = "staff_home"
+    const val STAFF_BOOKING_DETAIL = "staff_booking_detail/{bookingId}"
 }
 
 @Composable
@@ -60,7 +64,8 @@ fun AppNavHost(appViewModel: AppViewModel = hiltViewModel()) {
     } else {
         AppNavGraph(
             startDestination = startDestination!!,
-            isLoggedIn = session != null
+            isLoggedIn = session != null,
+            userRole = session?.role
         )
     }
 }
@@ -68,21 +73,34 @@ fun AppNavHost(appViewModel: AppViewModel = hiltViewModel()) {
 @Composable
 private fun AppNavGraph(
     startDestination: String,
-    isLoggedIn: Boolean
+    isLoggedIn: Boolean,
+    userRole: String? = null
 ) {
     val navController = rememberNavController()
 
     val handleTabSelected: (NavigationTab) -> Unit = { tab ->
         when (tab) {
             NavigationTab.HOME -> {
-                navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.HOME) { inclusive = true }
+                if (userRole == "STAFF" || userRole == "OWNER") {
+                    navController.navigate(Routes.STAFF_HOME) {
+                        popUpTo(Routes.STAFF_HOME) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
                 }
             }
             NavigationTab.BOOKINGS -> {
                 if (isLoggedIn) {
-                    navController.navigate(Routes.MY_BOOKINGS) {
-                        popUpTo(Routes.HOME) { inclusive = false }
+                    if (userRole == "STAFF" || userRole == "OWNER") {
+                        navController.navigate(Routes.STAFF_HOME) {
+                            popUpTo(Routes.STAFF_HOME) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.MY_BOOKINGS) {
+                            popUpTo(Routes.HOME) { inclusive = false }
+                        }
                     }
                 } else {
                     navController.navigate(Routes.LOGIN)
@@ -110,8 +128,14 @@ private fun AppNavGraph(
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    if (userRole == "STAFF" || userRole == "OWNER") {
+                        navController.navigate(Routes.STAFF_HOME) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
                     }
                 },
                 onGoToRegister = { navController.navigate(Routes.REGISTER) },
@@ -120,6 +144,31 @@ private fun AppNavGraph(
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Routes.STAFF_HOME) {
+            StaffHomeScreen(
+                onLoggedOut = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.STAFF_HOME) { inclusive = true }
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Routes.PROFILE)
+                },
+                onNavigateToBookingDetail = { bookingId: Long ->
+                    navController.navigate("staff_booking_detail/$bookingId")
+                }
+            )
+        }
+
+        composable(
+            route = Routes.STAFF_BOOKING_DETAIL,
+            arguments = listOf(navArgument("bookingId") { type = NavType.LongType })
+        ) {
+            StaffBookingDetailScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 

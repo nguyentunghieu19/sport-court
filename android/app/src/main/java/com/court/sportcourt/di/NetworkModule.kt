@@ -134,4 +134,9 @@ object NetworkModule {
     @Singleton
     fun providePaymentApi(@AuthenticatedNetwork retrofit: Retrofit): com.court.sportcourt.data.remote.PaymentApi =
         retrofit.create(com.court.sportcourt.data.remote.PaymentApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideManageApi(@AuthenticatedNetwork retrofit: Retrofit): com.court.sportcourt.data.remote.ManageApi =
+        retrofit.create(com.court.sportcourt.data.remote.ManageApi::class.java)
 }

@@ -8,6 +8,7 @@ import com.court.sportcourt.data.remote.dto.VenueResponse
 import com.court.sportcourt.data.repository.ApiResult
 import com.court.sportcourt.data.repository.AuthRepository
 import com.court.sportcourt.data.repository.BookingRepository
+import com.court.sportcourt.data.repository.PaymentRepository
 import com.court.sportcourt.data.repository.VenueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -24,16 +25,6 @@ import javax.inject.Inject
 enum class HomeTab {
     HOME, BOOKINGS, NOTIFICATIONS, PROFILE
 }
-
-data class BookingItem(
-    val id: Long,
-    val courtName: String,
-    val categoryName: String,
-    val date: String,
-    val timeSlot: String,
-    val price: String,
-    val status: String
-)
 
 data class NotificationItem(
     val id: Long,
@@ -58,8 +49,7 @@ data class HomeUiState(
     val isLastPage: Boolean = false,
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val mockBookings: List<BookingItem> = emptyList(),
-    val mockNotifications: List<NotificationItem> = emptyList(),
+    val notifications: List<NotificationItem> = emptyList(),
     val snackbarMessage: String? = null
 )
 
@@ -67,7 +57,8 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val venueRepository: VenueRepository,
-    private val bookingRepository: BookingRepository
+    private val bookingRepository: BookingRepository,
+    private val paymentRepository: PaymentRepository
 ) : ViewModel() {
 
     val session: StateFlow<UserSession?> = authRepository.session
@@ -109,23 +100,72 @@ class HomeViewModel @Inject constructor(
 
     fun loadUserNotifications() {
         viewModelScope.launch {
-            when (val result = bookingRepository.getMyBookings(page = 0, size = 10)) {
+            val notificationList = mutableListOf<NotificationItem>()
+
+            // 1. Tải thông báo Hoàn tiền từ Staff/Admin (GET /api/refunds/my)
+            when (val refundResult = paymentRepository.getMyRefunds(page = 0, size = 10)) {
                 is ApiResult.Success -> {
-                    val bookings = result.data.content
-                    val notifications = bookings.mapIndexed { index, booking ->
-                        val isConfirmed = booking.status == "CONFIRMED"
-                        NotificationItem(
-                            id = booking.id,
-                            title = if (isConfirmed) "Thanh toán cọc thành công! 🎉" else "Đơn đặt sân mới 📌",
-                            message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"} - ${booking.fieldName ?: "Sân"}) ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""}) ${if (isConfirmed) "đã được xác nhận lịch chơi." else "đang chờ thanh toán cọc."}",
-                            time = if (index == 0) "Vừa xong" else "${(index + 1) * 15} phút trước",
-                            isUnread = index == 0
+                    refundResult.data.content.forEachIndexed { index, refund ->
+                        val isRefunded = refund.status == "SUCCEEDED"
+                        notificationList.add(
+                            NotificationItem(
+                                id = 10000L + refund.id,
+                                title = if (isRefunded) "🟢 Staff đã hoàn tiền thành công! 🎉" else "💸 Yêu cầu hoàn tiền đang xử lý",
+                                message = "Đơn ${refund.bookingCode ?: ""} đã được Staff/Chủ sân ${if (isRefunded) "hoàn tiền thành công: " else "tiếp nhận yêu cầu hoàn tiền: "}${refund.amount.toLong()} đ. ${if (!refund.referenceNote.isNullOrBlank()) "Ghi chú: ${refund.referenceNote}" else ""}",
+                                time = if (index == 0) "Vừa xong" else "${(index + 1) * 20} phút trước",
+                                isUnread = index == 0
+                            )
                         )
                     }
-                    _uiState.update { it.copy(mockNotifications = notifications) }
                 }
                 is ApiResult.Error -> {}
             }
+
+            // 2. Tải thông báo Đơn hàng/Hủy đơn từ Staff/Admin (GET /api/bookings/my)
+            when (val bookingResult = bookingRepository.getMyBookings(page = 0, size = 10)) {
+                is ApiResult.Success -> {
+                    bookingResult.data.content.forEachIndexed { index, booking ->
+                        when (booking.status) {
+                            "CONFIRMED" -> {
+                                notificationList.add(
+                                    NotificationItem(
+                                        id = booking.id,
+                                        title = "🎉 Đặt sân thành công!",
+                                        message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"} - ${booking.fieldName ?: "Sân"}) ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""}) đã được xác nhận lịch chơi.",
+                                        time = if (index == 0) "Vừa xong" else "${(index + 1) * 15} phút trước",
+                                        isUnread = index == 0
+                                    )
+                                )
+                            }
+                            "CANCELLED" -> {
+                                notificationList.add(
+                                    NotificationItem(
+                                        id = booking.id + 5000L,
+                                        title = "🔴 Đơn đặt sân đã bị hủy",
+                                        message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"}) ngày ${booking.date ?: ""} đã bị hủy. ${if (!booking.cancellationReason.isNullOrBlank()) "Lý do: ${booking.cancellationReason}" else ""}",
+                                        time = "${(index + 1) * 30} phút trước",
+                                        isUnread = false
+                                    )
+                                )
+                            }
+                            "PENDING_PAYMENT" -> {
+                                notificationList.add(
+                                    NotificationItem(
+                                        id = booking.id,
+                                        title = "🟡 Đơn đặt sân chờ thanh toán cọc",
+                                        message = "Đơn ${booking.bookingCode} đang trong thời gian giữ chỗ 15 phút. Vui lòng thanh toán cọc để hoàn tất.",
+                                        time = "Vừa xong",
+                                        isUnread = true
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+                is ApiResult.Error -> {}
+            }
+
+            _uiState.update { it.copy(notifications = notificationList) }
         }
     }
 

@@ -220,6 +220,28 @@ fun BookingConfirmScreen(
                 shape = RoundedCornerShape(12.dp),
                 maxLines = 3
             )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Cảnh báo quy định hủy đơn
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "⚠️ Đơn đã thanh toán chỉ hủy được trước giờ chơi theo chính sách quy định của địa điểm.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
         }
     }
 }

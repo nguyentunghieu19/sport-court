@@ -170,7 +170,7 @@ fun VenueDetailScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Thẻ Chính sách đặt cọc và hủy sân
+                // Thẻ Chính sách đặt cọc và hủy sân (Hiển thị đầy đủ 6 trường dữ liệu)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -180,34 +180,60 @@ fun VenueDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "📋 Chính sách & Quy định",
+                            text = "📋 Chính sách quy định địa điểm",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
 
                         val policy = venue.policy
                         if (policy != null) {
+                            // 1. Tỷ lệ cọc
                             Text(
-                                text = "💳 Đặt cọc ${policy.depositPercentage.toInt()}%" +
-                                        if (policy.depositRefundableOnCustomerCancel) " (Hoàn cọc khi hủy trước hạn)" else "",
+                                text = "💳 Mức tiền cọc: ${policy.depositPercentage.toInt()}% tổng giá trị đơn",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            // 2. Thời hạn hủy đơn
+                            Text(
+                                text = "⏰ Hạn hủy trước giờ chơi: ${policy.cancellationDeadlineHours} giờ",
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
                             Spacer(Modifier.height(6.dp))
 
+                            // 3. Hoàn cọc khi khách hủy
                             Text(
-                                text = "❌ Hủy miễn phí trước ${policy.cancellationDeadlineHours} giờ" +
-                                        if (policy.fullPaymentRefundableBeforeDeadline) " (Hoàn 100% tiền)" else "",
+                                text = "🔄 Hoàn tiền cọc khi khách hủy trước hạn: ${if (policy.depositRefundableOnCustomerCancel) "Có" else "Không"}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
                             Spacer(Modifier.height(6.dp))
 
+                            // 4. Hoàn toàn bộ khi thanh toán 100%
                             Text(
-                                text = "⏱️ Giữ chỗ ${policy.paymentTimeoutMinutes} phút",
+                                text = "💰 Hoàn tiền 100% khi trả đủ & hủy trước hạn: ${if (policy.fullPaymentRefundableBeforeDeadline) "Có" else "Không"}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            // 5. Chủ sân hủy hoàn 100%
+                            Text(
+                                text = "🛡️ Chủ sân hủy đơn: ${if (policy.ownerCancellationFullRefund) "Hoàn trả 100% tiền cho khách" else "Theo thỏa thuận"}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            // 6. Thời gian đếm ngược giữ chỗ
+                            Text(
+                                text = "⏱️ Thời gian giữ chỗ thanh toán cọc: ${policy.paymentTimeoutMinutes} phút",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         } else {

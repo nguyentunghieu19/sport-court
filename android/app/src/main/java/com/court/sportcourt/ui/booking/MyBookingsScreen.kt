@@ -178,21 +178,24 @@ private fun BookingItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = booking.bookingCode,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = booking.bookingCode,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 Surface(
                     color = when (booking.status) {
@@ -200,7 +203,7 @@ private fun BookingItemCard(
                         "CONFIRMED" -> MaterialTheme.colorScheme.primaryContainer
                         else -> MaterialTheme.colorScheme.errorContainer
                     },
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = when (booking.status) {
@@ -210,39 +213,38 @@ private fun BookingItemCard(
                         },
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        color = when (booking.status) {
+                            "PENDING_PAYMENT" -> MaterialTheme.colorScheme.onSecondaryContainer
+                            "CONFIRMED" -> MaterialTheme.colorScheme.onPrimaryContainer
+                            else -> MaterialTheme.colorScheme.onErrorContainer
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        maxLines = 1
                     )
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             Text(
-                text = booking.venueName ?: "Cụm sân thể thao",
+                text = "${booking.venueName ?: "Cụm sân thể thao"}${if (!booking.fieldName.isNullOrBlank()) " - ${booking.fieldName}" else ""}",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
 
-            if (!booking.fieldName.isNullOrBlank()) {
-                Text(
-                    text = "Sân: ${booking.fieldName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
 
             Text(
-                text = "⏱️ ${booking.date} (${booking.startTime} - ${booking.endTime})",
-                style = MaterialTheme.typography.bodyMedium
+                text = "⏱️ Ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""})",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             HorizontalDivider()
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -250,8 +252,8 @@ private fun BookingItemCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Tiền cọc: ${currencyFormatter.format(booking.depositAmount)}",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "Cần cọc: ${currencyFormatter.format(booking.depositAmount)}",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
@@ -260,7 +262,7 @@ private fun BookingItemCard(
                     text = "Xem chi tiết →",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

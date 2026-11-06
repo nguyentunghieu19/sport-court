@@ -2,6 +2,9 @@ package com.court.sportcourt.data.remote
 
 import com.court.sportcourt.data.remote.dto.BookingRequest
 import com.court.sportcourt.data.remote.dto.BookingResponse
+import com.court.sportcourt.data.remote.dto.CancelBookingRequest
+import com.court.sportcourt.data.remote.dto.CancelResultResponse
+import com.court.sportcourt.data.remote.dto.CancellationPreviewResponse
 import com.court.sportcourt.data.remote.dto.PageResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -24,4 +27,15 @@ interface BookingApi {
 
     @GET("api/bookings/{id}")
     suspend fun getBookingDetail(@Path("id") id: Long): Response<BookingResponse>
+
+    @GET("api/bookings/{id}/cancellation-preview")
+    suspend fun getCancellationPreview(
+        @Path("id") id: Long
+    ): Response<CancellationPreviewResponse>
+
+    @POST("api/bookings/{id}/cancel")
+    suspend fun cancelBooking(
+        @Path("id") id: Long,
+        @Body request: CancelBookingRequest? = null
+    ): Response<CancelResultResponse>
 }

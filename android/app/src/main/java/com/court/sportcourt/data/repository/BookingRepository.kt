@@ -4,6 +4,9 @@ import com.court.sportcourt.data.remote.BookingApi
 import com.court.sportcourt.data.remote.dto.ApiError
 import com.court.sportcourt.data.remote.dto.BookingRequest
 import com.court.sportcourt.data.remote.dto.BookingResponse
+import com.court.sportcourt.data.remote.dto.CancelBookingRequest
+import com.court.sportcourt.data.remote.dto.CancelResultResponse
+import com.court.sportcourt.data.remote.dto.CancellationPreviewResponse
 import com.court.sportcourt.data.remote.dto.PageResponse
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -50,6 +53,14 @@ class BookingRepository @Inject constructor(
 
     suspend fun getBookingDetail(id: Long): ApiResult<BookingResponse> = handle {
         bookingApi.getBookingDetail(id)
+    }
+
+    suspend fun getCancellationPreview(id: Long): ApiResult<CancellationPreviewResponse> = handle {
+        bookingApi.getCancellationPreview(id)
+    }
+
+    suspend fun cancelBooking(id: Long, reason: String? = null): ApiResult<CancelResultResponse> = handle {
+        bookingApi.cancelBooking(id, CancelBookingRequest(reason = reason?.trim()?.ifBlank { null }))
     }
 
     private suspend fun <T> handle(call: suspend () -> Response<T>): ApiResult<T> {
