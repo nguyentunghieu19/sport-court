@@ -7,7 +7,7 @@ import * as venueService from "../services/venueService";
 import type { ManagerStatsResponse } from "../types/stats";
 import type { VenueResponse } from "../types/venue";
 
-export function formatVND(amount: number | null | undefined): string {
+function formatVND(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(amount)) return "0 đ";
   return Number(amount).toLocaleString("vi-VN") + " đ";
 }
@@ -319,7 +319,20 @@ export function StatisticsPage() {
 
               {/* Khu vực vẽ biểu đồ cột */}
               <div className="pt-6">
-                <div className="flex h-56 items-end gap-2 sm:gap-4 px-2">
+                {/* Thước đo tham chiếu mức cao nhất */}
+                <div className="flex items-center justify-between text-xs text-slate-400 pb-2 px-1 border-b border-dashed border-slate-100">
+                  <span>Mức cao nhất: <span className="font-mono font-semibold text-slate-700">{formatVND(maxRevenueInChart)}</span></span>
+                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Đơn vị: VNĐ</span>
+                </div>
+
+                <div className="relative mt-4 flex h-60 items-end gap-2 sm:gap-4 px-2">
+                  {/* Đường lưới nét đứt nền (Grid lines) */}
+                  <div className="pointer-events-none absolute inset-x-2 top-0 bottom-12 flex flex-col justify-between">
+                    <div className="border-b border-dashed border-slate-100 w-full" />
+                    <div className="border-b border-dashed border-slate-100 w-full" />
+                    <div className="border-b border-dashed border-slate-100 w-full" />
+                  </div>
+
                   {activeChartData.map((item, idx) => {
                     const heightPercent = maxRevenueInChart > 0
                       ? Math.max(Math.round((item.revenue / maxRevenueInChart) * 100), item.revenue > 0 ? 8 : 2)
@@ -328,28 +341,31 @@ export function StatisticsPage() {
                     return (
                       <div
                         key={idx}
-                        className="group relative flex flex-1 flex-col items-center justify-end h-full"
+                        className="group relative z-10 flex flex-1 flex-col items-center justify-end h-full"
                       >
                         {/* Tooltip khi hover */}
-                        <div className="pointer-events-none absolute -top-12 z-20 hidden -translate-x-1/2 flex-col items-center rounded-lg bg-slate-900 px-2.5 py-1 text-center shadow-lg transition group-hover:flex">
+                        <div className="pointer-events-none absolute -top-12 left-1/2 z-30 hidden -translate-x-1/2 flex-col items-center rounded-lg bg-slate-900 px-2.5 py-1 text-center shadow-lg transition group-hover:flex">
                           <span className="font-mono text-[11px] font-bold text-white whitespace-nowrap">
                             {formatVND(item.revenue)}
                           </span>
                           <span className="text-[10px] text-slate-300">
                             {item.bookingsCount} đơn đặt
                           </span>
+                          <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-slate-900" />
                         </div>
 
-                        {/* Cột biểu đồ */}
-                        <div className="w-full max-w-[42px] overflow-hidden rounded-t-lg bg-slate-100 transition duration-200 group-hover:bg-emerald-100">
-                          <div
-                            className="w-full rounded-t-lg bg-gradient-to-t from-emerald-600 to-green-400 transition-all duration-500 group-hover:from-emerald-500 group-hover:to-green-300"
-                            style={{ height: `${heightPercent}%` }}
-                          />
+                        {/* Vùng cột biểu đồ có chiều cao cố định */}
+                        <div className="flex h-44 w-full items-end justify-center">
+                          <div className="relative flex h-full w-full max-w-[42px] items-end justify-center rounded-t-lg bg-slate-100/80 p-0.5 transition duration-200 group-hover:bg-emerald-100/60">
+                            <div
+                              className="w-full rounded-t-md bg-gradient-to-t from-emerald-600 via-emerald-500 to-teal-400 shadow-xs transition-all duration-500 group-hover:from-emerald-500 group-hover:to-teal-300"
+                              style={{ height: `${heightPercent}%` }}
+                            />
+                          </div>
                         </div>
 
                         {/* Nhãn trục X */}
-                        <div className="mt-2 text-center">
+                        <div className="mt-2 text-center h-10">
                           <span className="block text-[11px] font-bold text-slate-700">
                             {item.label}
                           </span>
