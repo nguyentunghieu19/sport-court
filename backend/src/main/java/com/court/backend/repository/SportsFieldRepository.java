@@ -18,6 +18,8 @@ public interface SportsFieldRepository extends JpaRepository<SportsField, Long> 
 
     boolean existsByVenueIdAndNameIgnoreCaseAndIdNot(Long venueId, String name, Long id);
 
+    List<SportsField> findByVenueIdIn(Collection<Long> venueIds);
+
     List<SportsField> findByVenueIdInAndStatus(Collection<Long> venueIds, FieldStatus status);
 
     List<SportsField> findByVenueIdAndStatusInOrderByNameAsc(Long venueId, Collection<FieldStatus> statuses);

@@ -36,6 +36,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     @EntityGraph(attributePaths = {"field", "field.venue"})
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
 
+    @EntityGraph(attributePaths = {"field", "field.venue", "user"})
+    List<Booking> findByFieldVenueIdIn(Collection<Long> venueIds);
+
     // Tìm kiếm động cho chủ sân và nhân viên, nạp sẵn các quan hệ cần hiển thị
     @Override
     @EntityGraph(attributePaths = {"field", "field.venue", "user", "cancelledBy"})

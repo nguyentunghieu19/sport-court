@@ -13,6 +13,8 @@ import { FieldAvailabilityPage } from "./pages/FieldAvailabilityPage";
 import { BookingsPage } from "./pages/BookingsPage";
 import { BookingDetailPage } from "./pages/BookingDetailPage";
 import { RefundsPage } from "./pages/RefundsPage";
+import { StatisticsPage } from "./pages/StatisticsPage";
+import { StaffPage } from "./pages/StaffPage";
 
 function App() {
   return (
@@ -23,6 +25,7 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="statistics" element={<StatisticsPage />} />
           {/* Các trang dành riêng cho OWNER */}
           <Route element={<RequireOwner />}>
             <Route path="venues" element={<VenuesPage />} />
@@ -41,6 +44,7 @@ function App() {
               path="venues/:venueId/fields/:fieldId/availability"
               element={<FieldAvailabilityPage />}
             />
+            <Route path="staff" element={<StaffPage />} />
           </Route>
           <Route path="bookings" element={<BookingsPage />} />
           <Route path="bookings/:id" element={<BookingDetailPage />} />
