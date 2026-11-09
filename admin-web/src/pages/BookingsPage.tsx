@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import { useAuth } from "../auth/authContext";
+import { CopyBookingCodeButton } from "./CopyBookingCodeButton";
 import * as bookingService from "../services/bookingService";
 import * as venueService from "../services/venueService";
 import type {
@@ -41,6 +42,13 @@ export function formatTimeRange(start: string | null | undefined, end: string | 
 
 export function BookingsPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [checkInCode, setCheckInCode] = useState("");
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [checkInError, setCheckInError] = useState("");
+  const [outstandingOnly, setOutstandingOnly] = useState(
+    searchParams.get("outstandingOnly") === "true",
+  );
 
   // Dữ liệu danh sách cụm sân & sân con để lọc
   const [venues, setVenues] = useState<VenueResponse[]>([]);
@@ -50,6 +58,7 @@ export function BookingsPage() {
   const [pageData, setPageData] = useState<PageResponse<ManagerBookingResponse> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const latestListRequest = useRef(0);
 
   // Bộ lọc
   const [selectedVenueId, setSelectedVenueId] = useState<number | "">(
@@ -151,6 +160,7 @@ export function BookingsPage() {
 
   // Tải danh sách đơn đặt sân theo bộ lọc
   const fetchBookings = async () => {
+    const requestId = ++latestListRequest.current;
     setLoading(true);
     setError(null);
     try {
@@ -160,20 +170,37 @@ export function BookingsPage() {
         date: selectedDate || undefined,
         status: selectedStatus !== "ALL" ? selectedStatus : undefined,
         keyword: keyword || undefined,
+        outstandingOnly,
         page,
         size: pageSize,
       });
-      setPageData(data);
+      if (requestId === latestListRequest.current) setPageData(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      if (requestId === latestListRequest.current) setError(getErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (requestId === latestListRequest.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-  }, [selectedVenueId, selectedFieldId, selectedDate, selectedStatus, page]);
+  }, [selectedVenueId, selectedFieldId, selectedDate, selectedStatus, page, outstandingOnly]);
+
+  const handleCheckInByCode = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const code = checkInCode.trim();
+    if (checkingIn || !code) return;
+    setCheckingIn(true);
+    setCheckInError("");
+    try {
+      const result = await bookingService.checkInByCode(code);
+      navigate(`/bookings/${result.booking.id}`);
+    } catch (err) {
+      setCheckInError(getErrorMessage(err));
+    } finally {
+      setCheckingIn(false);
+    }
+  };
 
   // Xử lý tìm kiếm bằng Enter hoặc bấm nút Tìm kiếm
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -189,10 +216,12 @@ export function BookingsPage() {
     setSelectedDate("");
     setSelectedStatus("ALL");
     setKeyword("");
+    setOutstandingOnly(false);
     setPage(0);
   };
 
   const hasActiveFilters =
+    outstandingOnly ||
     selectedVenueId !== "" ||
     selectedFieldId !== "" ||
     selectedDate !== "" ||
@@ -310,6 +339,28 @@ export function BookingsPage() {
           </button>
         </div>
       </div>
+
+      <section aria-label="Vận hành tại sân" className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-emerald-200 bg-white p-4 shadow-xs">
+        <form onSubmit={handleCheckInByCode} className="min-w-0 flex-1">
+          <label htmlFor="check-in-code" className="block text-sm font-semibold text-slate-800">Check-in theo mã đơn</label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input id="check-in-code" value={checkInCode} onChange={(event) => setCheckInCode(event.target.value)}
+              maxLength={40} required disabled={checkingIn} placeholder="Nhập hoặc dán mã đơn"
+              className="min-w-0 grow rounded-xl border border-slate-300 px-3 py-2 text-sm sm:grow-0" />
+            <button disabled={checkingIn || !checkInCode.trim()} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+              {checkingIn ? "Đang ghi nhận…" : "Ghi nhận khách đến"}
+            </button>
+          </div>
+          {checkInError && <p role="alert" className="mt-2 text-sm text-rose-700">{checkInError}</p>}
+        </form>
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+          <input type="checkbox" checked={outstandingOnly} onChange={(event) => {
+            setOutstandingOnly(event.target.checked);
+            setPage(0);
+          }} className="size-4 accent-amber-700" />
+          Chỉ đơn còn nợ
+        </label>
+      </section>
 
       {/* ── KPI THỐNG KÊ TỔNG QUAN ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -582,9 +633,8 @@ export function BookingsPage() {
                 {bookingsList.map((item) => {
                   const b = item.booking;
                   const isCancelable =
-                    b.status !== "CANCELLED" &&
-                    b.status !== "COMPLETED" &&
-                    b.status !== "NO_SHOW";
+                    !item.checkedInAt &&
+                    (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED");
                   const hasPendingRefund = item.pendingRefundAmount > 0;
 
                   return (
@@ -594,13 +644,16 @@ export function BookingsPage() {
                     >
                       {/* Mã đơn */}
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <Link
-                          to={`/bookings/${b.id}`}
-                          className="inline-flex items-center gap-1 font-mono text-xs font-bold text-slate-800 bg-slate-100/90 hover:bg-emerald-50 hover:text-emerald-700 px-2 py-1 rounded-md border border-slate-200/60 transition"
-                          title="Bấm để xem chi tiết đơn"
-                        >
-                          #{b.bookingCode}
-                        </Link>
+                        <div className="inline-flex items-center gap-1.5">
+                          <Link
+                            to={`/bookings/${b.id}`}
+                            className="inline-flex items-center gap-1 font-mono text-xs font-bold text-slate-800 bg-slate-100/90 hover:bg-emerald-50 hover:text-emerald-700 px-2 py-1 rounded-md border border-slate-200/60 transition"
+                            title="Bấm để xem chi tiết đơn"
+                          >
+                            #{b.bookingCode}
+                          </Link>
+                          <CopyBookingCodeButton code={b.bookingCode} />
+                        </div>
                       </td>
 
                       {/* Khách hàng */}
@@ -672,7 +725,7 @@ export function BookingsPage() {
                         {b.status === "CONFIRMED" && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-xs font-medium text-emerald-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            Đã xác nhận
+                            {item.checkedInAt ? "Đã check-in" : "Đã xác nhận"}
                           </span>
                         )}
                         {b.status === "PENDING_PAYMENT" && (

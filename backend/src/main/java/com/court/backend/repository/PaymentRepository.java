@@ -17,6 +17,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByBookingIdOrderByIdAsc(Long bookingId);
 
+    Optional<Payment> findByBookingIdAndIdempotencyKey(Long bookingId, String idempotencyKey);
+
     List<Payment> findByBookingIdInAndStatusIn(Collection<Long> bookingIds, Collection<PaymentStatus> statuses);
 
     // Đã có giao dịch thành công khác cho cùng đơn (dùng để phát hiện thanh toán trùng)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -38,9 +40,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -73,13 +79,33 @@ fun BookingDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chi tiết đơn đặt sân", fontWeight = FontWeight.Bold) },
+                title = { Text("Chi tiết đặt sân", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("← Quay lại")
+                    IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Quay lại" }) {
+                        CustomerIcon(CustomerIconKind.BACK, Modifier.size(20.dp))
                     }
                 }
             )
+        },
+        bottomBar = {
+            val booking = state.booking
+            if (!state.isLoading && booking != null && booking.status == "PENDING_PAYMENT" && !state.isExpired) {
+                Surface(color = MaterialTheme.colorScheme.surface) {
+                    Button(
+                        onClick = {
+                            onNavigateToPaymentOption(booking.id, booking.totalAmount, booking.depositAmount)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(16.dp)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Thanh toán ngay qua VNPay", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
@@ -100,7 +126,9 @@ fun BookingDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🚫 Không tìm thấy thông tin đơn hàng", style = MaterialTheme.typography.titleMedium)
+                    CustomerIcon(CustomerIconKind.CALENDAR, Modifier.size(36.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("Không tìm thấy thông tin đơn hàng", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(12.dp))
                     Button(onClick = onBack) {
                         Text("Quay lại")
@@ -132,11 +160,11 @@ fun BookingDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = if (state.isExpired) "⏰ Đã hết thời hạn thanh toán cọc!" else "⏰ Thời gian còn lại để giữ sân & cọc:",
+                                text = if (state.isExpired) "Đã hết thời hạn thanh toán cọc!" else "Thời gian còn lại để giữ sân & cọc:",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Medium,
                                 color = if (state.isExpired) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
@@ -146,7 +174,7 @@ fun BookingDetailScreen(
 
                             Text(
                                 text = state.formattedCountdown,
-                                style = MaterialTheme.typography.displayMedium,
+                                style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = if (state.isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
@@ -176,7 +204,7 @@ fun BookingDetailScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "💸 Trạng thái hoàn tiền",
+                                text = "Trạng thái hoàn tiền",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isRefundSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
@@ -186,11 +214,11 @@ fun BookingDetailScreen(
 
                             Text(
                                 text = if (isRefundSuccess)
-                                    "🟢 Đã hoàn tiền lúc $formattedCompletedAt"
+                                    "Đã hoàn tiền lúc $formattedCompletedAt"
                                 else
-                                    "🟡 Chờ chủ sân hoàn tiền",
+                                    "Chờ chủ sân hoàn tiền",
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.SemiBold,
                                 color = if (isRefundSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                             )
 
@@ -216,27 +244,20 @@ fun BookingDetailScreen(
                     Spacer(Modifier.height(16.dp))
                 }
 
-                // Thẻ Thông tin Mã đơn & Trạng thái
+                // Lịch chơi được ưu tiên, mã đơn nằm ở cuối thẻ.
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text("Mã đơn đặt:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(
-                                    text = booking.bookingCode,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            CustomerIcon(CustomerIconKind.COURT, Modifier.size(24.dp))
 
                             Surface(
                                 color = when (booking.status) {
@@ -248,26 +269,27 @@ fun BookingDetailScreen(
                             ) {
                                 Text(
                                     text = when (booking.status) {
-                                        "PENDING_PAYMENT" -> "🟡 Chờ cọc"
-                                        "CONFIRMED" -> "🟢 Đã xác nhận"
-                                        else -> "🔴 Đã hủy"
+                                        "PENDING_PAYMENT" -> "Chờ cọc"
+                                        "CONFIRMED" -> "Đã xác nhận"
+                                        else -> "Đã hủy"
                                     },
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
+                                    color = when (booking.status) {
+                                        "PENDING_PAYMENT" -> MaterialTheme.colorScheme.onSecondaryContainer
+                                        "CONFIRMED" -> MaterialTheme.colorScheme.onPrimaryContainer
+                                        else -> MaterialTheme.colorScheme.onErrorContainer
+                                    },
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
                         }
 
-                        Spacer(Modifier.height(12.dp))
-
-                        HorizontalDivider()
-
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(16.dp))
 
                         Text(
                             text = booking.venueName ?: "Cụm sân thể thao",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
 
@@ -279,22 +301,31 @@ fun BookingDetailScreen(
                             )
                         }
 
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(16.dp))
 
                         Text(
-                            text = "📅 Ngày chơi: ${booking.date}",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "Ngày chơi: ${booking.date}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Text(
-                            text = "⏱️ Khung giờ: ${booking.startTime} - ${booking.endTime}",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "${booking.startTime} - ${booking.endTime}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
+
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(12.dp))
+                        Text("Mã đơn đặt", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(booking.bookingCode, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
 
                         if (!booking.note.isNullOrBlank()) {
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                text = "📝 Ghi chú: ${booking.note}",
+                                text = "Ghi chú: ${booking.note}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -309,12 +340,12 @@ fun BookingDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "💳 Thông tin tiền đặt sân",
+                            text = "Thông tin tiền đặt sân",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -325,7 +356,7 @@ fun BookingDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Tổng tiền sân:")
+                            Text("Tổng tiền sân", modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(currencyFormatter.format(booking.totalAmount), fontWeight = FontWeight.SemiBold)
                         }
 
@@ -335,7 +366,7 @@ fun BookingDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Cần thanh toán cọc:", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            Text("Cần thanh toán cọc", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(
                                 currencyFormatter.format(booking.depositAmount),
                                 fontWeight = FontWeight.Bold,
@@ -353,30 +384,13 @@ fun BookingDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Số tiền còn lại thanh toán tại sân:")
+                            Text("Số tiền còn lại thanh toán tại sân", modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(currencyFormatter.format(booking.remainingAfterDeposit), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
 
                 Spacer(Modifier.height(20.dp))
-
-                // Nút Thanh toán ngay qua VNPay
-                if (booking.status == "PENDING_PAYMENT" && !state.isExpired) {
-                    Button(
-                        onClick = {
-                            onNavigateToPaymentOption(booking.id, booking.totalAmount, booking.depositAmount)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("💳 Thanh toán ngay qua VNPay", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-                }
 
                 // Nút Hủy đơn đặt sân (Chỉ hiện khi status là PENDING_PAYMENT hoặc CONFIRMED)
                 if (booking.status == "PENDING_PAYMENT" || booking.status == "CONFIRMED") {
@@ -391,7 +405,7 @@ fun BookingDetailScreen(
                         if (state.isLoadingPreview) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
-                            Text("❌ Hủy đơn đặt sân", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                            Text("Hủy đơn đặt sân", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -399,14 +413,15 @@ fun BookingDetailScreen(
                 }
 
                 // Nút Quay Về Trang Chủ
-                OutlinedButton(
+                TextButton(
                     onClick = onNavigateToHome,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("🏠 Về trang chủ", fontWeight = FontWeight.Bold)
+                    CustomerIcon(CustomerIconKind.HOME, Modifier.size(18.dp))
+                    Text("Về trang chủ", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Medium)
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -435,26 +450,26 @@ fun BookingDetailScreen(
 
                         Spacer(Modifier.height(8.dp))
 
-                        Text("⏰ Hạn hủy hoàn tiền: $formattedDeadline", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text("Hạn hủy hoàn tiền: $formattedDeadline", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
 
                         Spacer(Modifier.height(10.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Số tiền đã trả:")
+                            Text("Số tiền đã trả:", modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(currencyFormatter.format(preview.paidAmount), fontWeight = FontWeight.SemiBold)
                         }
 
                         Spacer(Modifier.height(4.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Số tiền được hoàn:")
+                            Text("Số tiền được hoàn:", modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(currencyFormatter.format(preview.refundAmount), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
 
                         Spacer(Modifier.height(4.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Khấu trừ không hoàn:")
+                            Text("Khấu trừ không hoàn:", modifier = Modifier.weight(1f).padding(end = 12.dp))
                             Text(currencyFormatter.format(preview.forfeitedAmount), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         }
 
@@ -471,7 +486,7 @@ fun BookingDetailScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = "⚠️ Theo chính sách địa điểm, bạn vẫn được quyền hủy đơn để nhả lại sân, nhưng tiền cọc đã thanh toán (${currencyFormatter.format(preview.paidAmount)}) sẽ KHÔNG được hoàn lại.",
+                                    text = "Theo chính sách địa điểm, bạn vẫn được quyền hủy đơn để nhả lại sân, nhưng tiền cọc đã thanh toán (${currencyFormatter.format(preview.paidAmount)}) sẽ KHÔNG được hoàn lại.",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onErrorContainer,

@@ -148,6 +148,9 @@ public class CancellationService {
         List<Payment> payments = lockPaymentsThenBooking(booking);
         Instant now = Instant.now();
 
+        if (booking.getCheckedInAt() != null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Không thể hủy đơn đã ghi nhận khách đến");
+        }
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Đơn không thể hủy ở trạng thái hiện tại");
         }
@@ -252,6 +255,9 @@ public class CancellationService {
         Terms terms = resolveTerms(booking);
         Instant deadline = booking.getStartAt().minus(terms.deadlineHours(), ChronoUnit.HOURS);
 
+        if (booking.getCheckedInAt() != null) {
+            return deny(deadline, paid, "Không thể hủy đơn đã ghi nhận khách đến");
+        }
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT
                 && booking.getStatus() != BookingStatus.CONFIRMED) {
             return deny(deadline, paid, "Đơn không thể hủy ở trạng thái hiện tại");

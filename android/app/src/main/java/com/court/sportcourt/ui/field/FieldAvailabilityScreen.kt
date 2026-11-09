@@ -1,5 +1,7 @@
 package com.court.sportcourt.ui.field
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -12,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -23,13 +28,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,11 +44,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.court.sportcourt.data.remote.dto.TimeSlotDto
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
+import com.court.sportcourt.ui.customer.CustomerSectionLabel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -67,10 +77,13 @@ fun FieldAvailabilityScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Lưới giờ trống sân", fontWeight = FontWeight.Bold) },
+                title = { Text("Chọn giờ chơi", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("← Quay lại")
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = "Quay lại" }
+                    ) {
+                        CustomerIcon(CustomerIconKind.BACK)
                     }
                 }
             )
@@ -81,24 +94,29 @@ fun FieldAvailabilityScreen(
                 val formattedTotal = currencyFormatter.format(state.totalSelectedPrice)
 
                 Surface(
-                    shadowElevation = 8.dp,
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    shadowElevation = 3.dp,
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
                                 text = "${state.selectedSlotIndexes.size} khung giờ đã chọn",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
-                                text = "Tổng tiền: $formattedTotal",
+                                text = formattedTotal,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -115,9 +133,12 @@ fun FieldAvailabilityScreen(
                                     state.totalSelectedPrice
                                 )
                             },
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                         ) {
-                            Text("Đặt sân ngay")
+                            Text("Đặt sân ngay", fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(8.dp))
+                            CustomerIcon(CustomerIconKind.ARROW, tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 }
@@ -131,11 +152,7 @@ fun FieldAvailabilityScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Chọn ngày chơi:",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            CustomerSectionLabel("Ngày chơi")
             Spacer(Modifier.height(8.dp))
 
             Row(
@@ -149,6 +166,12 @@ fun FieldAvailabilityScreen(
                     FilterChip(
                         selected = selected,
                         onClick = { viewModel.selectDate(option.dateString) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.heightIn(min = 60.dp),
                         label = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(option.displayDay, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
@@ -178,7 +201,7 @@ fun FieldAvailabilityScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "⚠️ Sân này hiện không nhận đặt lịch online",
+                            text = "Sân hiện không nhận đặt lịch online",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -204,12 +227,12 @@ fun FieldAvailabilityScreen(
                 val slots = state.availabilityResponse?.timeSlots ?: emptyList()
 
                 Text(
-                    text = "Lưới khung giờ (${slots.count { it.status == "AVAILABLE" }} ô còn trống)",
+                    text = "Giờ chơi · ${slots.count { it.status == "AVAILABLE" }} khung còn trống",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Chỉ cho chọn ô giờ trống (cho phép chọn nhiều giờ liền nhau)",
+                    text = "Chọn một hoặc nhiều khung giờ liên tiếp",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -263,6 +286,12 @@ private fun TimeSlotCard(
         else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
     }
 
+    val animatedBackground by animateColorAsState(
+        targetValue = backgroundColor,
+        animationSpec = tween(160),
+        label = "slotSelection"
+    )
+
     val border = if (isSelected || isMyPending) {
         BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else {
@@ -273,19 +302,19 @@ private fun TimeSlotCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = isClickable, onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = animatedBackground),
         border = border
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "${slot.startTime} - ${slot.endTime}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isClickable) MaterialTheme.colorScheme.onSurface else Color.Gray
+                color = if (isClickable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(Modifier.height(4.dp))
@@ -294,7 +323,7 @@ private fun TimeSlotCard(
                 text = formattedPrice,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isClickable) MaterialTheme.colorScheme.primary else Color.Gray
+                color = if (isClickable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(Modifier.height(6.dp))
@@ -310,11 +339,11 @@ private fun TimeSlotCard(
             ) {
                 Text(
                     text = when {
-                        isAvailable -> if (isSelected) "✓ Đã chọn" else "🟢 Giờ trống"
-                        isMyPending -> "⏳ Của bạn (Bấm xem)"
-                        isPending -> "⏳ Đang xử lý"
-                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> "🔒 Đã đặt"
-                        else -> "🔴 Bảo trì"
+                        isAvailable -> if (isSelected) "Đã chọn" else "Còn trống"
+                        isMyPending -> "Của bạn · Xem đơn"
+                        isPending -> "Đang xử lý"
+                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> "Đã đặt"
+                        else -> "Bảo trì"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
@@ -322,7 +351,7 @@ private fun TimeSlotCard(
                         isSelected -> MaterialTheme.colorScheme.onPrimary
                         isAvailable -> MaterialTheme.colorScheme.onSecondaryContainer
                         isPending -> MaterialTheme.colorScheme.onTertiaryContainer
-                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> Color.DarkGray
+                        slot.status == "BOOKED" || slot.status == "CONFIRMED" -> MaterialTheme.colorScheme.onSurfaceVariant
                         else -> MaterialTheme.colorScheme.onError
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)

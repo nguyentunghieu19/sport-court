@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import * as bookingService from "../services/bookingService";
+import { BookingOperations } from "./BookingOperations";
+import { CopyBookingCodeButton } from "./CopyBookingCodeButton";
 import type {
   CancelResultResponse,
   ManagerBookingResponse,
@@ -105,7 +107,8 @@ export function BookingDetailPage() {
 
   const b = bookingDetail.booking;
   const isCancelable =
-    b.status !== "CANCELLED" && b.status !== "COMPLETED" && b.status !== "NO_SHOW";
+    !bookingDetail.checkedInAt &&
+    (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED");
   const hasPendingRefund = bookingDetail.pendingRefundAmount > 0;
 
   return (
@@ -124,10 +127,11 @@ export function BookingDetailPage() {
             </svg>
           </button>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                 Đơn đặt sân #{b.bookingCode}
               </h1>
+              <CopyBookingCodeButton key={b.id} code={b.bookingCode} />
               <span
                 className={`rounded-full border px-3 py-1 text-xs font-bold ${
                   b.status === "CONFIRMED"
@@ -186,6 +190,15 @@ export function BookingDetailPage() {
           </Link>
         </div>
       </div>
+
+      <BookingOperations
+        key={b.id}
+        detail={bookingDetail}
+        onUpdate={(updated) => setBookingDetail((current) =>
+          current?.booking.id === updated.booking.id ? updated : current,
+        )}
+        disabled={cancelModalOpen || cancelling}
+      />
 
       {/* ── NẾU CÓ KHOẢN TIỀN ĐANG CHỜ HOÀN (NỔI BẬT) ── */}
       {hasPendingRefund && (

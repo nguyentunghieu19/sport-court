@@ -3,6 +3,8 @@ import type {
   BookingFilterParams,
   CancelResultResponse,
   ManagerBookingResponse,
+  OnsitePaymentReceipt,
+  OnsitePaymentRequest,
   PageResponse,
 } from "../types/booking";
 
@@ -10,6 +12,9 @@ export async function getManagerBookings(
   params?: BookingFilterParams,
 ): Promise<PageResponse<ManagerBookingResponse>> {
   const queryParams: Record<string, string | number> = {};
+  if (params?.outstandingOnly) {
+    queryParams.outstandingOnly = "true";
+  }
 
   if (params?.venueId !== undefined && params.venueId !== null) {
     queryParams.venueId = params.venueId;
@@ -56,6 +61,35 @@ export async function cancelManagerBooking(
   const response = await apiClient.post<CancelResultResponse>(
     `/api/manage/bookings/${id}/cancel`,
     { reason },
+  );
+  return response.data;
+}
+
+export async function updateBookingAtVenue(
+  id: number,
+  action: "check-in" | "complete" | "no-show",
+): Promise<ManagerBookingResponse> {
+  const response = await apiClient.post<ManagerBookingResponse>(
+    `/api/manage/bookings/${id}/${action}`,
+  );
+  return response.data;
+}
+
+export async function checkInByCode(bookingCode: string): Promise<ManagerBookingResponse> {
+  const response = await apiClient.post<ManagerBookingResponse>(
+    "/api/manage/bookings/check-in",
+    { bookingCode },
+  );
+  return response.data;
+}
+
+export async function recordOnsitePayment(
+  id: number,
+  request: OnsitePaymentRequest,
+): Promise<OnsitePaymentReceipt> {
+  const response = await apiClient.post<OnsitePaymentReceipt>(
+    `/api/manage/bookings/${id}/onsite-payment`,
+    request,
   );
   return response.data;
 }

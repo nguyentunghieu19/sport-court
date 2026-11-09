@@ -1,5 +1,6 @@
 package com.court.sportcourt.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -28,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -52,10 +56,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.court.sportcourt.data.remote.dto.VenueResponse
+import com.court.sportcourt.ui.customer.CourtArtwork
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
+import com.court.sportcourt.ui.customer.CustomerSectionLabel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -86,18 +97,19 @@ fun HomeScreen(
                 title = {
                     Text(
                         text = when (uiState.currentTab) {
-                            HomeTab.HOME -> "SportCourt ⚽"
-                            HomeTab.BOOKINGS -> "Lịch đặt sân 📅"
-                            HomeTab.NOTIFICATIONS -> "Thông báo 🔔"
-                            HomeTab.PROFILE -> "Cá nhân 👤"
+                            HomeTab.HOME -> "SportCourt"
+                            HomeTab.BOOKINGS -> "Lịch đặt sân"
+                            HomeTab.NOTIFICATIONS -> "Thông báo"
+                            HomeTab.PROFILE -> "Cá nhân"
                         },
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 actions = {
                     TextButton(onClick = { viewModel.refreshVenues() }) {
-                        Text("🔄 Làm mới", fontWeight = FontWeight.Bold)
+                        Text("Làm mới", fontWeight = FontWeight.Bold)
                     }
                     if (session != null) {
                         TextButton(onClick = { viewModel.logout(onLoggedOut) }) {
@@ -110,18 +122,18 @@ fun HomeScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
         bottomBar = {
             val unreadCount = uiState.notifications.count { it.isUnread }
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                 NavigationBarItem(
                     selected = uiState.currentTab == HomeTab.HOME,
                     onClick = { viewModel.selectTab(HomeTab.HOME) },
-                    icon = { Text("🏠", style = MaterialTheme.typography.titleMedium) },
-                    label = { Text("Trang chủ", fontWeight = FontWeight.Bold) }
+                    icon = { CustomerIcon(CustomerIconKind.HOME, tint = LocalContentColor.current) },
+                    label = { Text("Trang chủ") }
                 )
 
                 NavigationBarItem(
@@ -133,8 +145,8 @@ fun HomeScreen(
                             onNavigateToLogin()
                         }
                     },
-                    icon = { Text("📅", style = MaterialTheme.typography.titleMedium) },
-                    label = { Text("Lịch đặt", fontWeight = FontWeight.Bold) }
+                    icon = { CustomerIcon(CustomerIconKind.CALENDAR, tint = LocalContentColor.current) },
+                    label = { Text("Lịch đặt") }
                 )
 
                 NavigationBarItem(
@@ -145,16 +157,15 @@ fun HomeScreen(
                             BadgedBox(
                                 badge = { Badge { Text("$unreadCount") } }
                             ) {
-                                Text("🔔", style = MaterialTheme.typography.titleMedium)
+                                CustomerIcon(CustomerIconKind.BELL, tint = LocalContentColor.current)
                             }
                         } else {
-                            Text("🔔", style = MaterialTheme.typography.titleMedium)
+                            CustomerIcon(CustomerIconKind.BELL, tint = LocalContentColor.current)
                         }
                     },
                     label = {
                         Text(
-                            text = if (unreadCount > 0) "Thông báo($unreadCount)" else "Thông báo",
-                            fontWeight = FontWeight.Bold
+                            text = "Thông báo"
                         )
                     }
                 )
@@ -168,8 +179,8 @@ fun HomeScreen(
                             onNavigateToLogin()
                         }
                     },
-                    icon = { Text("👤", style = MaterialTheme.typography.titleMedium) },
-                    label = { Text("Cá nhân", fontWeight = FontWeight.Bold) }
+                    icon = { CustomerIcon(CustomerIconKind.USER, tint = LocalContentColor.current) },
+                    label = { Text("Cá nhân") }
                 )
             }
         },
@@ -256,30 +267,43 @@ private fun HomeContentView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                shape = RoundedCornerShape(16.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(20.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = if (sessionName != null) "Xin chào, $sessionName! 👋" else "Xin chào quý khách! 👋",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Tìm kiếm & Đặt sân thể thao nhanh chóng",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (sessionName != null) "Chào $sessionName" else "Chào bạn",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Sẵn sàng\nra sân?",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Tìm sân cho buổi chơi của bạn",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        )
+                    }
+                    CourtArtwork(
+                        modifier = Modifier.width(92.dp).height(126.dp).alpha(0.7f),
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
         }
 
         item {
@@ -291,9 +315,10 @@ private fun HomeContentView(
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = onSearchQueryChange,
-                    label = { Text("🔍 Tìm tên địa điểm, quận...") },
+                    placeholder = { Text("Tìm tên sân, khu vực…") },
+                    leadingIcon = { CustomerIcon(CustomerIconKind.SEARCH) },
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics { contentDescription = "Tìm tên sân, khu vực" },
                     shape = RoundedCornerShape(12.dp)
                 )
 
@@ -302,7 +327,9 @@ private fun HomeContentView(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.height(56.dp)
                 ) {
-                    Text("⚙️ Bộ lọc")
+                    CustomerIcon(CustomerIconKind.FILTER, tint = MaterialTheme.colorScheme.onPrimary)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Lọc")
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -326,7 +353,7 @@ private fun HomeContentView(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("🏆 Môn: $label", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text("$label", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -335,7 +362,7 @@ private fun HomeContentView(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("🏙️ $city", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text("$city", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -344,7 +371,7 @@ private fun HomeContentView(
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("📍 $district", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text("$district", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -362,11 +389,7 @@ private fun HomeContentView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Danh sách địa điểm sân",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                CustomerSectionLabel("Khám phá sân", modifier = Modifier.weight(1f))
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(8.dp)
@@ -404,7 +427,7 @@ private fun HomeContentView(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("🚫 Không tìm thấy địa điểm nào", style = MaterialTheme.typography.titleMedium)
+                        Text("Không tìm thấy sân phù hợp", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "Thử thay đổi từ khóa hoặc bộ lọc",
@@ -519,7 +542,7 @@ private fun FilterBottomSheet(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "⚙️ Bộ lọc địa điểm sân",
+                text = "Bộ lọc sân",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -547,18 +570,10 @@ private fun FilterBottomSheet(
                 )
 
                 uiState.sportTypes.forEach { sport ->
-                    val sportIcon = when (sport.code) {
-                        "FOOTBALL" -> "⚽ "
-                        "BADMINTON" -> "🏸 "
-                        "TENNIS" -> "🎾 "
-                        "PICKLEBALL" -> "🏓 "
-                        "BASKETBALL" -> "🏀 "
-                        else -> "🏆 "
-                    }
                     FilterChip(
                         selected = tempSportCode == sport.code,
                         onClick = { tempSportCode = if (tempSportCode == sport.code) null else sport.code },
-                        label = { Text("$sportIcon${sport.label}") },
+                        label = { Text(sport.label) },
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
@@ -649,55 +664,54 @@ private fun VenueCard(
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = venue.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f).padding(end = 8.dp)
-                )
-
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
+                    CustomerIcon(CustomerIconKind.COURT, modifier = Modifier.padding(12.dp).size(28.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = venue.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(3.dp))
                     Text(
                         text = "Quận: ${venue.district ?: ""}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                CustomerIcon(CustomerIconKind.ARROW, modifier = Modifier.size(20.dp))
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "📍 ${venue.address}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(12.dp))
-
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CustomerIcon(CustomerIconKind.LOCATION, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = "${venue.address}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             if (venue.sportTypes.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     venue.sportTypes.forEach { sportCode ->
                         val displayLabel = when (sportCode) {
@@ -709,44 +723,37 @@ private fun VenueCard(
                             else -> sportCode
                         }
                         Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(16.dp)
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = "🏆 $displayLabel",
+                                text = displayLabel,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
             }
-
-            HorizontalDivider()
-
+            Spacer(Modifier.height(14.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(Modifier.height(12.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (formattedPrice != null) "Giá từ: $formattedPrice/giờ" else "Giá từ: Chưa có sân",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Text(
-                    text = "Xem chi tiết →",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Giá từ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = if (formattedPrice != null) "$formattedPrice/giờ" else "Chưa có sân",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text("Xem chi tiết", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -761,7 +768,7 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Thông báo hệ thống 🔔",
+            text = "Thông báo của bạn",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -778,7 +785,7 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🔔 Bạn không có thông báo nào.", style = MaterialTheme.typography.titleMedium)
+                    Text("Bạn chưa có thông báo.", style = MaterialTheme.typography.titleMedium)
                 }
             }
         } else {
@@ -793,7 +800,7 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
                         else
                             MaterialTheme.colorScheme.surface
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {

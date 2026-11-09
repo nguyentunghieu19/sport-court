@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -35,12 +37,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.court.sportcourt.data.remote.dto.BookingResponse
 import com.court.sportcourt.ui.components.AppBottomNavigationBar
 import com.court.sportcourt.ui.components.NavigationTab
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -59,15 +65,15 @@ fun MyBookingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Lịch đặt của tôi 📅", fontWeight = FontWeight.Bold) },
+                title = { Text("Lịch đặt của tôi", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("← Quay lại")
+                    IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Quay lại" }) {
+                        CustomerIcon(CustomerIconKind.BACK, Modifier.size(20.dp))
                     }
                 },
                 actions = {
                     TextButton(onClick = onNavigateToMyPayments) {
-                        Text("📜 Lịch sử GD", fontWeight = FontWeight.Bold)
+                        Text("Giao dịch", fontWeight = FontWeight.Medium)
                     }
                 }
             )
@@ -86,6 +92,13 @@ fun MyBookingsScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            Text(
+                "Lịch chơi và thông tin đặt sân",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+
             // Bộ lọc Trạng thái đơn (Chips)
             Row(
                 modifier = Modifier
@@ -102,19 +115,19 @@ fun MyBookingsScreen(
                 FilterChip(
                     selected = state.selectedStatus == "PENDING_PAYMENT",
                     onClick = { viewModel.selectStatusFilter("PENDING_PAYMENT") },
-                    label = { Text("🟡 Chờ thanh toán") }
+                    label = { Text("Chờ thanh toán") }
                 )
 
                 FilterChip(
                     selected = state.selectedStatus == "CONFIRMED",
                     onClick = { viewModel.selectStatusFilter("CONFIRMED") },
-                    label = { Text("🟢 Đã xác nhận") }
+                    label = { Text("Đã xác nhận") }
                 )
 
                 FilterChip(
                     selected = state.selectedStatus == "CANCELLED",
                     onClick = { viewModel.selectStatusFilter("CANCELLED") },
-                    label = { Text("🔴 Đã hủy") }
+                    label = { Text("Đã hủy") }
                 )
             }
 
@@ -130,7 +143,8 @@ fun MyBookingsScreen(
             } else if (state.bookings.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier
@@ -138,7 +152,9 @@ fun MyBookingsScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("🚫 Chưa có lịch đặt sân nào", style = MaterialTheme.typography.titleMedium)
+                        CustomerIcon(CustomerIconKind.CALENDAR, Modifier.size(36.dp))
+                        Spacer(Modifier.height(16.dp))
+                        Text("Chưa có lịch đặt sân nào", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "Hãy tìm sân và tạo lịch đặt ngay!",
@@ -178,8 +194,8 @@ private fun BookingItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
@@ -191,9 +207,9 @@ private fun BookingItemCard(
                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                     Text(
                         text = booking.bookingCode,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -207,12 +223,12 @@ private fun BookingItemCard(
                 ) {
                     Text(
                         text = when (booking.status) {
-                            "PENDING_PAYMENT" -> "🟡 Chờ cọc"
-                            "CONFIRMED" -> "🟢 Đã xác nhận"
-                            else -> "🔴 Đã hủy"
+                            "PENDING_PAYMENT" -> "Chờ cọc"
+                            "CONFIRMED" -> "Đã xác nhận"
+                            else -> "Đã hủy"
                         },
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = when (booking.status) {
                             "PENDING_PAYMENT" -> MaterialTheme.colorScheme.onSecondaryContainer
                             "CONFIRMED" -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -228,19 +244,32 @@ private fun BookingItemCard(
 
             Text(
                 text = "${booking.venueName ?: "Cụm sân thể thao"}${if (!booking.fieldName.isNullOrBlank()) " - ${booking.fieldName}" else ""}",
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(14.dp))
 
-            Text(
-                text = "⏱️ Ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""})",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CustomerIcon(CustomerIconKind.CLOCK, Modifier.size(20.dp))
+                Column {
+                    Text(
+                        text = "${booking.startTime ?: ""} - ${booking.endTime ?: ""}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Ngày ${booking.date ?: ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(16.dp))
 
             HorizontalDivider()
 
@@ -255,11 +284,12 @@ private fun BookingItemCard(
                     text = "Cần cọc: ${currencyFormatter.format(booking.depositAmount)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f).padding(end = 12.dp)
                 )
 
                 Text(
-                    text = "Xem chi tiết →",
+                    text = "Chi tiết →",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold

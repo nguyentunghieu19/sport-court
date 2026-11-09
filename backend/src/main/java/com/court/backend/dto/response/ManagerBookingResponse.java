@@ -1,6 +1,7 @@
 package com.court.backend.dto.response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 public record ManagerBookingResponse(
         BookingResponse booking,
@@ -16,6 +17,8 @@ public record ManagerBookingResponse(
         BigDecimal pendingRefundAmount,
         // Tiền khách còn phải trả tại sân (chỉ tính cho đơn đã xác nhận hoặc đã hoàn thành)
         BigDecimal outstandingAmount,
-        String cancelledByName
+        String cancelledByName,
+        Instant checkedInAt,
+        String checkedInByName
 ) {
 }

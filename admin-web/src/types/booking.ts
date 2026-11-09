@@ -41,6 +41,8 @@ export interface ManagerBookingResponse {
   pendingRefundAmount: number;
   outstandingAmount: number;
   cancelledByName: string | null;
+  checkedInAt: string | null;
+  checkedInByName: string | null;
 }
 
 export interface CancelResultResponse {
@@ -64,6 +66,7 @@ export interface PageResponse<T> {
 }
 
 export interface BookingFilterParams {
+  outstandingOnly?: boolean;
   venueId?: number;
   fieldId?: number;
   date?: string;
@@ -71,5 +74,16 @@ export interface BookingFilterParams {
   keyword?: string;
   page?: number;
   size?: number;
+}
+
+export interface OnsitePaymentRequest {
+  method: "CASH" | "BANK_TRANSFER";
+  amount: number;
+  idempotencyKey: string;
+}
+
+export interface OnsitePaymentReceipt {
+  id: number;
+  amount: number;
 }
 

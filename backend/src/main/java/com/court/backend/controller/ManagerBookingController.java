@@ -1,9 +1,12 @@
 package com.court.backend.controller;
 
+import com.court.backend.dto.request.CheckInByCodeRequest;
 import com.court.backend.dto.request.ManagerCancelRequest;
+import com.court.backend.dto.request.OnsitePaymentRequest;
 import com.court.backend.dto.response.CancelResultResponse;
 import com.court.backend.dto.response.ManagerBookingResponse;
 import com.court.backend.dto.response.PageResponse;
+import com.court.backend.dto.response.PaymentResponse;
 import com.court.backend.enums.BookingStatus;
 import com.court.backend.service.CancellationService;
 import com.court.backend.service.ManagerBookingService;
@@ -40,15 +43,43 @@ public class ManagerBookingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) BookingStatus status,
             @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "false") boolean outstandingOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return managerBookingService.list(
-                currentUserId(jwt), venueId, fieldId, date, status, keyword, page, size);
+                currentUserId(jwt), venueId, fieldId, date, status, keyword, outstandingOnly, page, size);
     }
 
     @GetMapping("/{id}")
     public ManagerBookingResponse get(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
         return managerBookingService.get(currentUserId(jwt), id);
+    }
+
+    @PostMapping("/{id}/check-in")
+    public ManagerBookingResponse checkIn(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return managerBookingService.checkIn(currentUserId(jwt), id);
+    }
+
+    @PostMapping("/check-in")
+    public ManagerBookingResponse checkInByCode(@AuthenticationPrincipal Jwt jwt,
+                                               @Valid @RequestBody CheckInByCodeRequest request) {
+        return managerBookingService.checkInByCode(currentUserId(jwt), request.bookingCode());
+    }
+
+    @PostMapping("/{id}/complete")
+    public ManagerBookingResponse complete(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return managerBookingService.complete(currentUserId(jwt), id);
+    }
+
+    @PostMapping("/{id}/no-show")
+    public ManagerBookingResponse noShow(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return managerBookingService.noShow(currentUserId(jwt), id);
+    }
+
+    @PostMapping("/{id}/onsite-payment")
+    public PaymentResponse recordOnsitePayment(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
+                                               @Valid @RequestBody OnsitePaymentRequest request) {
+        return managerBookingService.recordOnsitePayment(currentUserId(jwt), id, request);
     }
 
     @PostMapping("/{id}/cancel")

@@ -27,6 +27,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
 
     boolean existsByBookingCode(String bookingCode);
 
+    Optional<Booking> findByBookingCode(String bookingCode);
+
     @EntityGraph(attributePaths = {"field", "field.venue"})
     Page<Booking> findByUserId(Long userId, Pageable pageable);
 
@@ -41,6 +43,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
 
     // Tìm kiếm động cho chủ sân và nhân viên, nạp sẵn các quan hệ cần hiển thị
     @Override
-    @EntityGraph(attributePaths = {"field", "field.venue", "user", "cancelledBy"})
+    @EntityGraph(attributePaths = {"field", "field.venue", "user", "cancelledBy", "checkedInBy"})
     Page<Booking> findAll(Specification<Booking> spec, Pageable pageable);
 }

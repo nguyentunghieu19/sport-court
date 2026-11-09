@@ -15,6 +15,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.court.sportcourt.ui.auth.LoginScreen
@@ -23,6 +24,7 @@ import com.court.sportcourt.ui.booking.BookingConfirmScreen
 import com.court.sportcourt.ui.booking.BookingDetailScreen
 import com.court.sportcourt.ui.booking.MyBookingsScreen
 import com.court.sportcourt.ui.components.NavigationTab
+import com.court.sportcourt.ui.customer.CustomerTheme
 import com.court.sportcourt.ui.field.FieldAvailabilityScreen
 import com.court.sportcourt.ui.home.HomeScreen
 import com.court.sportcourt.ui.payment.PaymentHistoryScreen
@@ -77,6 +79,13 @@ private fun AppNavGraph(
     userRole: String? = null
 ) {
     val navController = rememberNavController()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val customerAppearance = userRole != "STAFF" && userRole != "OWNER" &&
+        currentEntry?.destination?.route in setOf(
+            Routes.HOME, Routes.VENUE_DETAIL, Routes.FIELD_AVAILABILITY,
+            Routes.BOOKING_CONFIRM, Routes.BOOKING_DETAIL, Routes.MY_BOOKINGS,
+            Routes.PAYMENT_OPTION, Routes.PAYMENT_RESULT, Routes.PAYMENT_HISTORY, Routes.PROFILE
+        )
 
     val handleTabSelected: (NavigationTab) -> Unit = { tab ->
         when (tab) {
@@ -123,7 +132,8 @@ private fun AppNavGraph(
         }
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    CustomerTheme(enabled = customerAppearance) {
+      NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -378,5 +388,6 @@ private fun AppNavGraph(
                 onTabSelected = handleTabSelected
             )
         }
+      }
     }
 }

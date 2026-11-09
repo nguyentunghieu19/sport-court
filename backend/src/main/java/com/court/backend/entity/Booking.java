@@ -65,6 +65,13 @@ public class Booking {
     @Column(name = "status", nullable = false)
     private BookingStatus status = BookingStatus.PENDING_PAYMENT;
 
+    @Column(name = "checked_in_at")
+    private Instant checkedInAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "checked_in_by")
+    private User checkedInBy;
+
     @Column(name = "customer_note", columnDefinition = "text")
     private String customerNote;
 

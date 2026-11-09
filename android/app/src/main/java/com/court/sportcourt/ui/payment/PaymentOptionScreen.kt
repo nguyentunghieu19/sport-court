@@ -1,7 +1,7 @@
 package com.court.sportcourt.ui.payment
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -24,8 +26,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,9 +35,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
+import com.court.sportcourt.ui.customer.CustomerSectionLabel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -60,18 +67,22 @@ fun PaymentOptionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chọn hình thức thanh toán", fontWeight = FontWeight.Bold) },
+                title = { Text("Thanh toán", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("← Quay lại")
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = "Quay lại" }
+                    ) {
+                        CustomerIcon(CustomerIconKind.BACK, tint = MaterialTheme.colorScheme.onSurface)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
+                shadowElevation = 0.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Button(
@@ -83,14 +94,19 @@ fun PaymentOptionScreen(
                     enabled = !state.isCreatingPayment,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp)
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     if (state.isCreatingPayment) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     } else {
-                        Text("Thanh toán 💳", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        CustomerIcon(CustomerIconKind.WALLET, tint = MaterialTheme.colorScheme.onPrimary)
+                        Text("Thanh toán", modifier = Modifier.padding(start = 10.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -102,47 +118,42 @@ fun PaymentOptionScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             // Thẻ Thông tin Đơn hàng
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "📋 Đơn đặt sân #${state.bookingId}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        text = "Đơn đặt sân #${state.bookingId}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Tổng giá trị đơn:", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                    Column {
+                        Text("Tổng giá trị đơn", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary)
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             currencyFormatter.format(state.totalAmount),
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
 
-            Text(
-                text = "Chọn mức tiền thanh toán:",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            CustomerSectionLabel("Chọn mức tiền thanh toán")
 
             Spacer(Modifier.height(12.dp))
 
@@ -154,19 +165,18 @@ fun PaymentOptionScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = if (state.selectedPaymentType == "DEPOSIT")
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        MaterialTheme.colorScheme.primaryContainer
                     else
-                        MaterialTheme.colorScheme.surfaceVariant
+                        MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (state.selectedPaymentType == "DEPOSIT") 4.dp else 1.dp
-                )
+                border = BorderStroke(1.dp, if (state.selectedPaymentType == "DEPOSIT") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     RadioButton(
                         selected = state.selectedPaymentType == "DEPOSIT",
@@ -175,20 +185,21 @@ fun PaymentOptionScreen(
 
                     Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                         Text(
-                            text = "Thanh toán Tiền Đặt Cọc",
+                            text = "Thanh toán tiền đặt cọc",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(Modifier.height(6.dp))
                         Text(
                             text = "Thanh toán cọc để giữ sân, số tiền còn lại sẽ trả tại sân.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(12.dp))
                         Text(
                             text = currencyFormatter.format(state.depositAmount),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -205,19 +216,18 @@ fun PaymentOptionScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = if (state.selectedPaymentType == "FULL")
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        MaterialTheme.colorScheme.primaryContainer
                     else
-                        MaterialTheme.colorScheme.surfaceVariant
+                        MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (state.selectedPaymentType == "FULL") 4.dp else 1.dp
-                )
+                border = BorderStroke(1.dp, if (state.selectedPaymentType == "FULL") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     RadioButton(
                         selected = state.selectedPaymentType == "FULL",
@@ -226,20 +236,21 @@ fun PaymentOptionScreen(
 
                     Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                         Text(
-                            text = "Thanh toán 100% Toàn Bộ Sân",
+                            text = "Thanh toán 100% toàn bộ sân",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(Modifier.height(6.dp))
                         Text(
                             text = "Thanh toán toàn bộ ngay để không cần thanh toán tại sân.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(12.dp))
                         Text(
                             text = currencyFormatter.format(state.totalAmount),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -253,20 +264,21 @@ fun PaymentOptionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "🔒 Bảo mật thanh toán bởi VNPay Gateway",
+                        text = "Bảo mật thanh toán bởi VNPay Gateway",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "Hỗ trợ thẻ ATM nội địa (NCB, Vietcombank, Techcombank...), QR Code và Ví điện tử.",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -20,9 +22,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -32,10 +36,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.court.sportcourt.ui.customer.CustomerIcon
+import com.court.sportcourt.ui.customer.CustomerIconKind
+import com.court.sportcourt.ui.customer.CustomerSectionLabel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -67,12 +75,13 @@ fun PaymentResultScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kết quả thanh toán 💳", fontWeight = FontWeight.Bold) },
+                title = { Text("Kết quả thanh toán", fontWeight = FontWeight.SemiBold) },
                 actions = {
                     TextButton(onClick = { viewModel.loadPaymentResult() }) {
-                        Text("🔄 Tải lại", fontWeight = FontWeight.Bold)
+                        Text("Tải lại", fontWeight = FontWeight.Medium)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { innerPadding ->
@@ -93,7 +102,9 @@ fun PaymentResultScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🚫 Không tìm thấy thông tin giao dịch", style = MaterialTheme.typography.titleMedium)
+                    CustomerIcon(CustomerIconKind.WALLET, modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("Không tìm thấy thông tin giao dịch", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(12.dp))
                     Button(onClick = onNavigateToHome) {
                         Text("Về trang chủ")
@@ -109,7 +120,7 @@ fun PaymentResultScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(12.dp))
@@ -131,17 +142,24 @@ fun PaymentResultScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = if (isSuccess) "🎉" else "🔴",
-                            style = MaterialTheme.typography.displayMedium
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        ) {
+                            CustomerIcon(
+                                kind = if (isSuccess) CustomerIconKind.CHECK else CustomerIconKind.CLOCK,
+                                modifier = Modifier.padding(16.dp).size(32.dp),
+                                tint = if (isSuccess) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onError
+                            )
+                        }
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(20.dp))
 
                         Text(
                             text = if (isSuccess) "Thanh toán thành công!" else "Thanh toán chưa hoàn tất!",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
                             color = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                         )
 
@@ -153,7 +171,8 @@ fun PaymentResultScreen(
                             else
                                 "Giao dịch bị hủy hoặc đang trong quá trình xử lý trên VNPay. Hệ thống đang tự động cập nhật khi bạn hoàn tất.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                            textAlign = TextAlign.Center,
+                            color = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
@@ -165,15 +184,11 @@ fun PaymentResultScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "🧾 Chi tiết giao dịch",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        CustomerSectionLabel("Chi tiết giao dịch")
 
                         Spacer(Modifier.height(12.dp))
 
@@ -181,8 +196,8 @@ fun PaymentResultScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Mã giao dịch:")
-                            Text("#${payment.id}", fontWeight = FontWeight.Bold)
+                            Text("Mã giao dịch:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("#${payment.id}", modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.SemiBold)
                         }
 
                         if (!payment.bookingCode.isNullOrBlank()) {
@@ -191,8 +206,8 @@ fun PaymentResultScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Mã đơn đặt sân:")
-                                Text(payment.bookingCode, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text("Mã đơn đặt sân:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(payment.bookingCode, modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                             }
                         }
 
@@ -202,10 +217,13 @@ fun PaymentResultScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Số tiền thanh toán:")
+                            Text("Số tiền thanh toán:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 currencyFormatter.format(payment.amount),
-                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.End,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -216,8 +234,8 @@ fun PaymentResultScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Cổng thanh toán:")
-                            Text("${payment.provider ?: "VNPAY"} (${payment.method ?: "GATEWAY"})")
+                            Text("Cổng thanh toán:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${payment.provider ?: "VNPAY"} (${payment.method ?: "GATEWAY"})", modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                         }
 
                         if (!payment.providerTransactionId.isNullOrBlank()) {
@@ -226,8 +244,8 @@ fun PaymentResultScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Mã giao dịch VNPay:")
-                                Text(payment.providerTransactionId, fontWeight = FontWeight.Medium)
+                                Text("Mã giao dịch VNPay:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(payment.providerTransactionId, modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Medium)
                             }
                         }
 
@@ -237,8 +255,8 @@ fun PaymentResultScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Thời gian thanh toán:")
-                                Text(payment.paidAt)
+                                Text("Thời gian thanh toán:", modifier = Modifier.weight(1f).padding(end = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(payment.paidAt, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                             }
                         }
                     }
@@ -255,32 +273,32 @@ fun PaymentResultScreen(
                             .height(52.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("📋 Xem chi tiết đơn hàng vừa đặt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Xem chi tiết đơn hàng vừa đặt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                     }
 
                     Spacer(Modifier.height(10.dp))
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = onNavigateToMyBookings,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("📅 Lịch đặt của tôi", fontWeight = FontWeight.Bold)
+                    Text("Lịch đặt của tôi", fontWeight = FontWeight.SemiBold)
                 }
 
                 Spacer(Modifier.height(10.dp))
 
-                OutlinedButton(
+                TextButton(
                     onClick = onNavigateToHome,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("🏠 Về trang chủ", fontWeight = FontWeight.Bold)
+                    Text("Về trang chủ", fontWeight = FontWeight.Medium)
                 }
 
                 Spacer(Modifier.height(16.dp))
