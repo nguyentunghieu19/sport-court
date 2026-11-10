@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
 import type { CreateFieldRequest, CreateVenueRequest, SportType, VenueResponse } from "../types/venue";
@@ -27,8 +27,10 @@ type TabKey = "LIST" | "ADD";
  *   - POST /api/owner/venues       → Thêm địa điểm mới
  */
 export function VenuesPage() {
+  const location = useLocation();
+  const [showWelcome, setShowWelcome] = useState(location.state?.registeredOwner === true);
   // ── Tab hiện tại ──
-  const [activeTab, setActiveTab] = useState<TabKey>("LIST");
+  const [activeTab, setActiveTab] = useState<TabKey>(showWelcome ? "ADD" : "LIST");
 
   // ── Danh sách địa điểm ──
   const [venues, setVenues] = useState<VenueResponse[]>([]);
@@ -208,6 +210,15 @@ export function VenuesPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-12">
+      {showWelcome && (
+        <div className="flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900" role="status">
+          <div>
+            <p className="font-bold">Tài khoản chủ sân đã sẵn sàng!</p>
+            <p className="mt-1 text-sm leading-relaxed">Bắt đầu bằng cách thêm địa điểm đầu tiên. Sau đó, thêm sân thi đấu, thiết lập giá và phân công nhân viên.</p>
+          </div>
+          <button type="button" onClick={() => setShowWelcome(false)} className="shrink-0 rounded-lg px-2 py-1 text-sm hover:bg-emerald-100" aria-label="Đóng lời chào">Đóng</button>
+        </div>
+      )}
       {/* ── HEADER ── */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

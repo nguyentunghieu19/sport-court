@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 @Service
@@ -27,6 +28,16 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        return createAccount(request, UserRole.USER);
+    }
+
+    @Transactional
+    public AuthResponse registerOwner(RegisterRequest request) {
+        return createAccount(request, UserRole.OWNER);
+    }
+
+    // Vai trò do endpoint quyết định, không nhận từ dữ liệu do client gửi lên.
+    private AuthResponse createAccount(RegisterRequest request, UserRole role) {
         String email = normalizeEmail(request.email());
         String phone = normalizePhone(request.phone());
 
@@ -39,13 +50,16 @@ public class AuthService {
         if (phone != null && userRepository.existsByPhone(phone)) {
             throw new ApiException(HttpStatus.CONFLICT, "Số điện thoại đã được sử dụng");
         }
+        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mật khẩu quá dài, vui lòng dùng mật khẩu ngắn hơn");
+        }
 
         User user = new User();
         user.setFullName(request.fullName().trim());
         user.setEmail(email);
         user.setPhone(phone);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setRole(UserRole.USER);
+        user.setRole(role);
         user = userRepository.save(user);
 
         return buildResponse(user);

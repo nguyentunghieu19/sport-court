@@ -4,6 +4,7 @@ import * as authService from "../services/authService";
 import { AuthContext } from "./authContext";
 import type { AuthContextValue } from "./authContext";
 import { clearSession, getSession, saveSession } from "./sessionStore";
+import type { RegisterOwnerRequest } from "../types/auth";
 
 // Các vai trò được vào trang quản trị (Chủ sân và Nhân viên)
 const ALLOWED_ROLES = ["OWNER", "STAFF"];
@@ -19,14 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(saveSession(auth));
   }, []);
 
+  const registerOwner = useCallback(async (request: RegisterOwnerRequest) => {
+    const auth = await authService.registerOwner(request);
+    if (auth.role !== "OWNER") {
+      throw new Error("Tài khoản chưa được cấp quyền chủ sân. Vui lòng liên hệ quản trị viên.");
+    }
+    setSession(saveSession(auth));
+  }, []);
+
   const logout = useCallback(() => {
     clearSession();
     setSession(null);
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, login, logout }),
-    [session, login, logout],
+    () => ({ session, login, registerOwner, logout }),
+    [session, login, registerOwner, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

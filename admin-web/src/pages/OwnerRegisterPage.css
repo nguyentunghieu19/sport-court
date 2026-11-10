@@ -1,0 +1,95 @@
+.sc-owner-register .sc-login-form-area {
+  max-width: 440px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.sc-owner-register .sc-login-form-heading h2 {
+  max-width: none;
+  font-size: clamp(28px, 2.5vw, 36px);
+}
+
+.sc-owner-register .sc-login-hero-copy > p {
+  max-width: 330px;
+}
+
+.sc-register-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+  color: #7b8574;
+  font-size: 10px;
+}
+
+.sc-register-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sc-register-steps span {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid #dde2d6;
+  border-radius: 50%;
+  font-size: 9px;
+}
+
+.sc-register-steps [aria-current="step"] {
+  color: #315237;
+  font-weight: 600;
+}
+
+.sc-register-steps [aria-current="step"] span {
+  border-color: #d5ef87;
+  background: #d5ef87;
+}
+
+.sc-owner-register .sc-login-input-wrap input {
+  padding-left: 15px;
+}
+
+.sc-owner-register .sc-register-hint {
+  margin: 18px 0 12px;
+  color: #6f7c67;
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.sc-register-contact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.sc-register-contact-row .sc-login-field + .sc-login-field {
+  margin-top: 0;
+}
+
+.sc-register-password {
+  margin-top: 20px;
+}
+
+.sc-owner-register .sc-register-staff-note {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e6eadd;
+  color: #7b8574;
+  font-size: 10px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+@media (min-width: 761px) and (max-width: 1100px), (max-width: 400px) {
+  .sc-register-contact-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .sc-owner-register .sc-login-form-area { margin-top: 24px; }
+  .sc-register-steps { margin-bottom: 22px; gap: 12px 18px; }
+}

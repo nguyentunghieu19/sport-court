@@ -3,6 +3,13 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterOwnerRequest {
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  password: string;
+}
+
 // Khớp AuthResponse của backend
 export interface AuthResponse {
   accessToken: string;

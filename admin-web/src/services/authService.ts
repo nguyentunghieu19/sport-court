@@ -1,9 +1,18 @@
 import apiClient from "../api/axiosClient";
-import type { AuthResponse, LoginRequest } from "../types/auth";
+import publicApiClient from "../api/publicApiClient";
+import type { AuthResponse, LoginRequest, RegisterOwnerRequest } from "../types/auth";
 
 export async function login(request: LoginRequest): Promise<AuthResponse> {
   const response = await apiClient.post<AuthResponse>(
     "/api/auth/login",
+    request,
+  );
+  return response.data;
+}
+
+export async function registerOwner(request: RegisterOwnerRequest): Promise<AuthResponse> {
+  const response = await publicApiClient.post<AuthResponse>(
+    "/api/auth/register-owner",
     request,
   );
   return response.data;

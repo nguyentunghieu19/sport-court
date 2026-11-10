@@ -1,9 +1,10 @@
 import { createContext, useContext } from "react";
-import type { UserSession } from "../types/auth";
+import type { RegisterOwnerRequest, UserSession } from "../types/auth";
 
 export interface AuthContextValue {
   session: UserSession | null;
   login: (identifier: string, password: string) => Promise<void>;
+  registerOwner: (request: RegisterOwnerRequest) => Promise<void>;
   logout: () => void;
 }
 

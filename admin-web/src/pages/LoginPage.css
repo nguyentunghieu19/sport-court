@@ -31,7 +31,8 @@
   cursor: pointer;
 }
 
-.sc-login button:focus-visible {
+.sc-login button:focus-visible,
+.sc-login a:focus-visible {
   outline: 3px solid #789749;
   outline-offset: 4px;
 }
@@ -584,6 +585,26 @@
   height: 5px;
   border-radius: 50%;
   background: #94a678;
+}
+
+.sc-login .sc-auth-switch {
+  margin-top: 24px;
+  color: #6b7867;
+  font-size: 11px;
+  line-height: 1.9;
+  text-align: center;
+}
+
+.sc-auth-switch a {
+  display: inline-block;
+  color: #285334;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.sc-auth-switch a:hover {
+  color: #527a30;
 }
 
 .sc-login-panel-footer {

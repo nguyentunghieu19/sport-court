@@ -4,6 +4,7 @@ import { RequireOwner } from "./auth/RequireOwner";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { OwnerRegisterPage } from "./pages/OwnerRegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { VenuesPage } from "./pages/VenuesPage";
 import { VenueEditPage } from "./pages/VenueEditPage";
@@ -20,6 +21,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register-owner" element={<OwnerRegisterPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AdminLayout />}>
