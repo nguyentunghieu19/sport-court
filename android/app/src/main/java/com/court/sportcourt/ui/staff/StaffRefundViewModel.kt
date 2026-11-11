@@ -15,6 +15,7 @@ import javax.inject.Inject
 
 data class StaffRefundUiState(
     val isLoading: Boolean = false,
+    val selectedVenueId: Long? = null,
     val selectedStatus: String? = "PENDING", // Mặc định "Chờ hoàn" (Theo Bảng yêu cầu #5)
     val refunds: List<ManagerRefundResponse> = emptyList(),
     val selectedRefundItem: ManagerRefundResponse? = null,
@@ -36,6 +37,11 @@ class StaffRefundViewModel @Inject constructor(
     val uiState: StateFlow<StaffRefundUiState> = _uiState.asStateFlow()
 
     init {
+        loadRefunds(0)
+    }
+
+    fun selectVenueFilter(venueId: Long?) {
+        _uiState.update { it.copy(selectedVenueId = venueId) }
         loadRefunds(0)
     }
 
@@ -69,6 +75,7 @@ class StaffRefundViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             val result = manageRepository.getManageRefunds(
+                venueId = state.selectedVenueId,
                 status = state.selectedStatus,
                 page = page,
                 size = 10

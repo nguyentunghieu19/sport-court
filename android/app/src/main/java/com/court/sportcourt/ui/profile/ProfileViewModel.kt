@@ -24,6 +24,7 @@ data class ProfileUiState(
     val newPassword: String = "",
     val confirmPassword: String = "",
     val showChangePasswordDialog: Boolean = false,
+    val dialogErrorMessage: String? = null,
     val errorMessage: String? = null,
     val successMessage: String? = null
 )
@@ -114,15 +115,15 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun onOldPasswordChange(value: String) {
-        _uiState.update { it.copy(oldPassword = value, errorMessage = null) }
+        _uiState.update { it.copy(oldPassword = value, dialogErrorMessage = null) }
     }
 
     fun onNewPasswordChange(value: String) {
-        _uiState.update { it.copy(newPassword = value, errorMessage = null) }
+        _uiState.update { it.copy(newPassword = value, dialogErrorMessage = null) }
     }
 
     fun onConfirmPasswordChange(value: String) {
-        _uiState.update { it.copy(confirmPassword = value, errorMessage = null) }
+        _uiState.update { it.copy(confirmPassword = value, dialogErrorMessage = null) }
     }
 
     fun toggleChangePasswordDialog(show: Boolean) {
@@ -132,6 +133,7 @@ class ProfileViewModel @Inject constructor(
                 oldPassword = "",
                 newPassword = "",
                 confirmPassword = "",
+                dialogErrorMessage = null,
                 errorMessage = null
             )
         }
@@ -140,19 +142,19 @@ class ProfileViewModel @Inject constructor(
     fun changePassword() {
         val state = _uiState.value
         if (state.oldPassword.isBlank() || state.newPassword.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Vui lòng nhập đầy đủ mật khẩu cũ và mới") }
+            _uiState.update { it.copy(dialogErrorMessage = "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới") }
             return
         }
         if (state.newPassword.length < 6) {
-            _uiState.update { it.copy(errorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự") }
+            _uiState.update { it.copy(dialogErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự") }
             return
         }
         if (state.newPassword != state.confirmPassword) {
-            _uiState.update { it.copy(errorMessage = "Xác nhận mật khẩu mới không khớp") }
+            _uiState.update { it.copy(dialogErrorMessage = "Xác nhận mật khẩu mới không trùng khớp") }
             return
         }
 
-        _uiState.update { it.copy(isChangingPassword = true, errorMessage = null) }
+        _uiState.update { it.copy(isChangingPassword = true, dialogErrorMessage = null, errorMessage = null) }
         viewModelScope.launch {
             val result = userRepository.changePassword(
                 oldPassword = state.oldPassword,
@@ -167,13 +169,17 @@ class ProfileViewModel @Inject constructor(
                             oldPassword = "",
                             newPassword = "",
                             confirmPassword = "",
+                            dialogErrorMessage = null,
                             successMessage = "Đổi mật khẩu thành công"
                         )
                     }
                 }
                 is ApiResult.Error -> {
                     _uiState.update {
-                        it.copy(isChangingPassword = false, errorMessage = result.message)
+                        it.copy(
+                            isChangingPassword = false,
+                            dialogErrorMessage = result.message ?: "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại"
+                        )
                     }
                 }
             }

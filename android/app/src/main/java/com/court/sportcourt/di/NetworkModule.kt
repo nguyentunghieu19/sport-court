@@ -83,7 +83,14 @@ object NetworkModule {
             } else {
                 chain.request()
             }
-            chain.proceed(request)
+            val response = chain.proceed(request)
+            if (response.code == 403) {
+                val peek = response.peekBody(1024).string()
+                if (peek.contains("Tài khoản đã bị khóa") || peek.contains("LOCKED") || peek.contains("FORBIDDEN")) {
+                    runBlocking { tokenStorage.clear() }
+                }
+            }
+            response
         }
 
         val logging = HttpLoggingInterceptor().apply {

@@ -20,6 +20,9 @@ data class StaffBookingDetailUiState(
     val showCancelDialog: Boolean = false,
     val cancelReason: String = "",
     val isCancelling: Boolean = false,
+    val showPaymentDialog: Boolean = false,
+    val paymentMethod: String = "CASH", // "CASH" hoặc "BANK_TRANSFER"
+    val isProcessingAction: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null
 )
@@ -55,6 +58,130 @@ class StaffBookingDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun checkInBooking() {
+        _uiState.update { it.copy(isProcessingAction = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = manageRepository.checkInBookingById(bookingId)) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            managerBooking = result.data,
+                            successMessage = "Check-in đơn thành công! 📲"
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun completeBooking() {
+        _uiState.update { it.copy(isProcessingAction = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = manageRepository.completeBooking(bookingId)) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            managerBooking = result.data,
+                            successMessage = "Hoàn thành đơn đặt sân! 🎉"
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun noShowBooking() {
+        _uiState.update { it.copy(isProcessingAction = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = manageRepository.noShowBooking(bookingId)) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            managerBooking = result.data,
+                            successMessage = "Đã đánh dấu Khách vắng mặt (No-show)"
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun togglePaymentDialog(show: Boolean, method: String = "CASH") {
+        _uiState.update {
+            it.copy(
+                showPaymentDialog = show,
+                paymentMethod = method,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun submitOnsitePayment() {
+        val state = _uiState.value
+        val booking = state.managerBooking ?: return
+        val amount = booking.outstandingAmount
+        if (amount <= 0) {
+            _uiState.update { it.copy(errorMessage = "Đơn đã thu đủ tiền, không còn nợ tại sân.") }
+            return
+        }
+
+        _uiState.update { it.copy(isProcessingAction = true, errorMessage = null) }
+        viewModelScope.launch {
+            val result = manageRepository.onsitePayment(
+                id = bookingId,
+                method = state.paymentMethod,
+                amount = amount
+            )
+            when (result) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
+                            showPaymentDialog = false,
+                            successMessage = "Ghi nhận thu tiền tại sân thành công! 💵"
+                        )
+                    }
+                    loadDetail()
+                }
+                is ApiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingAction = false,
                             errorMessage = result.message
                         )
                     }

@@ -3,6 +3,7 @@ package com.court.sportcourt.ui.staff
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.court.sportcourt.data.remote.dto.ManagerBookingResponse
+import com.court.sportcourt.data.remote.dto.ManagerStatsResponse
 import com.court.sportcourt.data.repository.ApiResult
 import com.court.sportcourt.data.repository.ManageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,8 +19,10 @@ import javax.inject.Inject
 data class StaffBookingUiState(
     val isLoading: Boolean = false,
     val keyword: String = "",
+    val selectedVenueId: Long? = null,
     val selectedStatus: String? = null,
     val selectedDate: String? = null,
+    val stats: ManagerStatsResponse? = null,
     val bookings: List<ManagerBookingResponse> = emptyList(),
     val page: Int = 0,
     val totalPages: Int = 1,
@@ -37,6 +40,7 @@ class StaffBookingViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
+        loadStats(null)
         loadBookings(0)
     }
 
@@ -49,6 +53,12 @@ class StaffBookingViewModel @Inject constructor(
         }
     }
 
+    fun selectVenueFilter(venueId: Long?) {
+        _uiState.update { it.copy(selectedVenueId = venueId) }
+        loadStats(venueId)
+        loadBookings(0)
+    }
+
     fun selectStatusFilter(status: String?) {
         _uiState.update { it.copy(selectedStatus = status) }
         loadBookings(0)
@@ -57,6 +67,17 @@ class StaffBookingViewModel @Inject constructor(
     fun selectDateFilter(date: String?) {
         _uiState.update { it.copy(selectedDate = date) }
         loadBookings(0)
+    }
+
+    fun loadStats(venueId: Long? = _uiState.value.selectedVenueId) {
+        viewModelScope.launch {
+            when (val result = manageRepository.getManageStats(venueId)) {
+                is ApiResult.Success -> {
+                    _uiState.update { it.copy(stats = result.data) }
+                }
+                is ApiResult.Error -> {}
+            }
+        }
     }
 
     fun goToPage(targetPage: Int) {
@@ -75,7 +96,7 @@ class StaffBookingViewModel @Inject constructor(
     fun goToPreviousPage() {
         val state = _uiState.value
         if (state.page > 0) {
-            goToPage(state.page - 1)
+            goToPage(state.page + 1)
         }
     }
 
@@ -84,6 +105,7 @@ class StaffBookingViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             val result = manageRepository.getManageBookings(
+                venueId = state.selectedVenueId,
                 keyword = state.keyword.ifBlank { null },
                 status = state.selectedStatus,
                 date = state.selectedDate,

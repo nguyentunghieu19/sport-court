@@ -3,15 +3,22 @@ package com.court.sportcourt.data.repository
 import com.court.sportcourt.data.remote.ManageApi
 import com.court.sportcourt.data.remote.dto.ApiError
 import com.court.sportcourt.data.remote.dto.CancelResultResponse
+import com.court.sportcourt.data.remote.dto.CheckInCodeRequest
 import com.court.sportcourt.data.remote.dto.ConfirmRefundRequest
+import com.court.sportcourt.data.remote.dto.FieldDto
+import com.court.sportcourt.data.remote.dto.ManagedVenueResponse
 import com.court.sportcourt.data.remote.dto.ManagerBookingResponse
 import com.court.sportcourt.data.remote.dto.ManagerCancelRequest
 import com.court.sportcourt.data.remote.dto.ManagerRefundResponse
+import com.court.sportcourt.data.remote.dto.ManagerStatsResponse
+import com.court.sportcourt.data.remote.dto.OnsitePaymentRequest
 import com.court.sportcourt.data.remote.dto.PageResponse
+import com.court.sportcourt.data.remote.dto.PaymentResponse
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,12 +28,25 @@ class ManageRepository @Inject constructor(
     private val json: Json
 ) {
 
+    suspend fun getManagedVenues(): ApiResult<List<ManagedVenueResponse>> = handle {
+        manageApi.getManagedVenues()
+    }
+
+    suspend fun getManagedFields(venueId: Long): ApiResult<List<FieldDto>> = handle {
+        manageApi.getManagedFields(venueId)
+    }
+
+    suspend fun getManageStats(venueId: Long? = null): ApiResult<ManagerStatsResponse> = handle {
+        manageApi.getManageStats(venueId = venueId)
+    }
+
     suspend fun getManageBookings(
         venueId: Long? = null,
         fieldId: Long? = null,
         date: String? = null,
         status: String? = null,
         keyword: String? = null,
+        outstandingOnly: Boolean? = null,
         page: Int = 0,
         size: Int = 10
     ): ApiResult<PageResponse<ManagerBookingResponse>> = handle {
@@ -36,6 +56,7 @@ class ManageRepository @Inject constructor(
             date = date?.trim()?.ifBlank { null },
             status = status?.trim()?.ifBlank { null },
             keyword = keyword?.trim()?.ifBlank { null },
+            outstandingOnly = outstandingOnly,
             page = page,
             size = size
         )
@@ -43,6 +64,33 @@ class ManageRepository @Inject constructor(
 
     suspend fun getManageBookingDetail(id: Long): ApiResult<ManagerBookingResponse> = handle {
         manageApi.getManageBookingDetail(id)
+    }
+
+    suspend fun checkInBookingById(id: Long): ApiResult<ManagerBookingResponse> = handle {
+        manageApi.checkInBookingById(id)
+    }
+
+    suspend fun checkInBookingByCode(code: String): ApiResult<ManagerBookingResponse> = handle {
+        manageApi.checkInBookingByCode(CheckInCodeRequest(bookingCode = code.trim()))
+    }
+
+    suspend fun completeBooking(id: Long): ApiResult<ManagerBookingResponse> = handle {
+        manageApi.completeBooking(id)
+    }
+
+    suspend fun noShowBooking(id: Long): ApiResult<ManagerBookingResponse> = handle {
+        manageApi.noShowBooking(id)
+    }
+
+    suspend fun onsitePayment(id: Long, method: String, amount: Double): ApiResult<PaymentResponse> = handle {
+        manageApi.onsitePayment(
+            id = id,
+            request = OnsitePaymentRequest(
+                method = method,
+                amount = amount,
+                idempotencyKey = UUID.randomUUID().toString()
+            )
+        )
     }
 
     suspend fun cancelManageBooking(id: Long, reason: String): ApiResult<CancelResultResponse> = handle {

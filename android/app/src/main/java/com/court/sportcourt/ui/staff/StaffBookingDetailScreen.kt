@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -291,7 +292,110 @@ fun StaffBookingDetailScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
+
+                // Khối Các Nút Hành Động Nghiệp Vụ Vận Hành Sân (Chuẩn Điều Kiện Backend)
+                Text("🛠️ Thao tác vận hành sân", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+
+                // Trạng thái / Nút Check-in
+                if (!item.checkedInAt.isNullOrBlank()) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "🟢 Đã check-in cho khách lúc ${item.checkedInAt.take(16).replace("T", " ")}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(14.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                } else if (booking.status == "CONFIRMED") {
+                    Button(
+                        onClick = viewModel::checkInBooking,
+                        enabled = !state.isProcessingAction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("📲 Check-in cho khách (30p trước giờ chơi)", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
+
+                // Nút Thu tiền tại sân (Chỉ thu khi đã check-in hoặc hoàn thành)
+                if (item.outstandingAmount > 0) {
+                    val canPayOnsite = !item.checkedInAt.isNullOrBlank() || booking.status == "COMPLETED"
+                    Button(
+                        onClick = { viewModel.togglePaymentDialog(true, "CASH") },
+                        enabled = !state.isProcessingAction && canPayOnsite,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (canPayOnsite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = "💵 Thu tiền còn nợ (${currencyFormatter.format(item.outstandingAmount)})",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    if (!canPayOnsite) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "⚠️ Theo quy định, cần bấm 'Check-in cho khách' trước khi thu tiền tại sân.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+                }
+
+                // Nút Hoàn thành & Vắng mặt
+                if (booking.status == "CONFIRMED") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        if (!item.checkedInAt.isNullOrBlank()) {
+                            Button(
+                                onClick = viewModel::completeBooking,
+                                enabled = !state.isProcessingAction,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("🎉 Hoàn thành", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        if (item.checkedInAt.isNullOrBlank()) {
+                            OutlinedButton(
+                                onClick = viewModel::noShowBooking,
+                                enabled = !state.isProcessingAction,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("⚠️ Khách Vắng mặt", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
 
                 // Nút "Hủy đơn" (Theo Bảng yêu cầu #4 - Bắt buộc nhập lý do)
                 if (booking.status == "PENDING_PAYMENT" || booking.status == "CONFIRMED") {
@@ -309,6 +413,66 @@ fun StaffBookingDetailScreen(
                     }
                 }
             }
+        }
+
+        // Hộp thoại Thu tiền tại sân (Tiền mặt CASH hoặc Chuyển khoản BANK_TRANSFER)
+        if (state.showPaymentDialog) {
+            val amount = state.managerBooking?.outstandingAmount ?: 0.0
+
+            AlertDialog(
+                onDismissRequest = { viewModel.togglePaymentDialog(false) },
+                title = { Text("Ghi nhận thu tiền tại sân 💵", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text("Số tiền cần thu: ${currencyFormatter.format(amount)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+                        Spacer(Modifier.height(14.dp))
+
+                        Text("Chọn hình thức thanh toán:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Button(
+                                onClick = { viewModel.togglePaymentDialog(true, "CASH") },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (state.paymentMethod == "CASH") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("💵 Tiền mặt")
+                            }
+
+                            Button(
+                                onClick = { viewModel.togglePaymentDialog(true, "BANK_TRANSFER") },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (state.paymentMethod == "BANK_TRANSFER") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("🏦 Chuyển khoản")
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = viewModel::submitOnsitePayment,
+                        enabled = !state.isProcessingAction
+                    ) {
+                        if (state.isProcessingAction) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                        } else {
+                            Text("Ghi nhận đã thu đủ")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.togglePaymentDialog(false) }) {
+                        Text("Bỏ qua")
+                    }
+                }
+            )
         }
 
         // Hộp thoại Hủy đơn của Nhân viên (Yêu cầu nhập lý do bắt buộc)

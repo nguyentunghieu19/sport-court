@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,16 +44,74 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StaffBookingListScreen(
+    venueId: Long? = null,
     onBookingClick: (bookingId: Long) -> Unit,
     viewModel: StaffBookingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(venueId) {
+        viewModel.selectVenueFilter(venueId)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // 4 Thẻ Thống kê Tổng quan (Khớp 100% Web Admin)
+        if (state.stats != null) {
+            val stats = state.stats!!
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Tổng số đơn", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${stats.totalBookings} đơn", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Đã xác nhận", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("${stats.confirmedBookings} hợp lệ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Hoàn thành", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        Text("${stats.completedBookings} xong", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Đã hủy đơn", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text("${stats.cancelledBookings} đơn", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+        }
+
         // Ô tìm kiếm (Mã đơn, tên khách, số điện thoại)
         OutlinedTextField(
             value = state.keyword,
@@ -65,7 +124,7 @@ fun StaffBookingListScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Bộ lọc Trạng thái đơn
+        // Bộ lọc Trạng thái đơn (Đã gỡ bỏ Chờ cọc theo yêu cầu)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -76,13 +135,6 @@ fun StaffBookingListScreen(
                 selected = state.selectedStatus == null,
                 onClick = { viewModel.selectStatusFilter(null) },
                 label = { Text("Tất cả") },
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            FilterChip(
-                selected = state.selectedStatus == "PENDING_PAYMENT",
-                onClick = { viewModel.selectStatusFilter("PENDING_PAYMENT") },
-                label = { Text("🟡 Chờ cọc") },
                 shape = RoundedCornerShape(12.dp)
             )
 

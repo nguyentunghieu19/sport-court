@@ -52,11 +52,16 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StaffRefundListScreen(
+    venueId: Long? = null,
     viewModel: StaffRefundViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    LaunchedEffect(venueId) {
+        viewModel.selectVenueFilter(venueId)
+    }
 
     LaunchedEffect(state.errorMessage, state.successMessage) {
         state.errorMessage?.let {
