@@ -44,6 +44,14 @@ public class OwnerAccessService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy địa điểm"));
     }
 
+    // Gọi trong transaction ghi: tránh ghi đè ảnh khi cập nhật thông tin địa điểm đồng thời.
+    @Transactional
+    public Venue requireOwnedVenueForUpdate(Long ownerId, Long venueId) {
+        requireActiveOwner(ownerId);
+        return venueRepository.findOwnedForUpdate(venueId, ownerId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy địa điểm"));
+    }
+
     // Sân phải thuộc địa điểm, và địa điểm phải thuộc OWNER
     @Transactional(readOnly = true)
     public SportsField requireOwnedField(Long ownerId, Long venueId, Long fieldId) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "react-router";
+import { VenueImagePicker } from "./VenueImagePicker";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
 import type { CreateFieldRequest, CreateVenueRequest, SportType, VenueResponse } from "../types/venue";
@@ -44,6 +45,10 @@ export function VenuesPage() {
   // ── Thêm địa điểm ──
   const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
+  const [venueImage, setVenueImage] = useState<File | null>(null);
+  const [imageProgress, setImageProgress] = useState<number | null>(null);
+  const [pendingVenue, setPendingVenue] = useState<VenueResponse | null>(null);
+  const [imageResetKey, setImageResetKey] = useState(0);
 
   // ── Modal thêm sân nhanh ──
   const [quickAddVenue, setQuickAddVenue] = useState<VenueResponse | null>(null);
@@ -110,12 +115,22 @@ export function VenuesPage() {
     };
   }, []);
 
-  // ── Xử lý thêm địa điểm ──
+  const completeCreatedVenue = (created: VenueResponse) => {
+    setVenues((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
+    setPendingVenue(null);
+    setVenueImage(null);
+    setImageResetKey((key) => key + 1);
+    setAddError(null);
+    setAddSuccess(`Đã tạo thành công địa điểm "${created.name}"!`);
+    reset();
+  };
+
+  // Giữ lại ID nếu tạo địa điểm thành công nhưng tải ảnh lỗi; lần thử tiếp chỉ gửi ảnh.
   const onSubmitAdd = async (values: CreateVenueRequest) => {
     setAddError(null);
     setAddSuccess(null);
     try {
-      const created = await venueService.createVenue({
+      const created = pendingVenue ?? await venueService.createVenue({
         name: values.name.trim(),
         address: values.address.trim(),
         city: values.city.trim(),
@@ -125,12 +140,23 @@ export function VenuesPage() {
         openingTime: values.openingTime,
         closingTime: values.closingTime,
       });
-      setAddSuccess(`Đã tạo thành công địa điểm "${created.name}"!`);
-      reset();
-      // Cập nhật lại danh sách
-      setVenues((prev) => [...prev, created]);
+      if (!pendingVenue) {
+        setPendingVenue(created);
+        setVenues((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
+      }
+      try {
+        if (venueImage) setImageProgress(0);
+        const completed = venueImage
+          ? await venueService.uploadVenueImage(created.id, venueImage, setImageProgress)
+          : created;
+        completeCreatedVenue(completed);
+      } catch (err) {
+        setAddError(`Địa điểm "${created.name}" đã được tạo, nhưng ảnh chưa được lưu. ${getErrorMessage(err)}`);
+      }
     } catch (err) {
       setAddError(getErrorMessage(err));
+    } finally {
+      setImageProgress(null);
     }
   };
 
@@ -423,6 +449,7 @@ export function VenuesPage() {
                   className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {venue.imageUrl && <img src={venue.imageUrl} alt={`Ảnh địa điểm ${venue.name}`} loading="lazy" className="h-20 w-28 shrink-0 rounded-xl border border-gray-100 object-cover" />}
                     {/* Tên & địa chỉ */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -546,13 +573,19 @@ export function VenuesPage() {
                 <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z" />
               </svg>
               <div>
-                <p className="text-sm font-semibold text-red-700">Tạo địa điểm thất bại</p>
+                <p className="text-sm font-semibold text-red-700">{pendingVenue ? "Địa điểm đã tạo, cần tải lại ảnh" : "Tạo địa điểm thất bại"}</p>
                 <p className="mt-1 text-xs text-red-600">{addError}</p>
               </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmitAdd)} noValidate className="space-y-5">
+          {pendingVenue && (
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+              Địa điểm "{pendingVenue.name}" đã có trong danh sách. Bạn có thể thử tải lại ảnh hoặc thêm ảnh sau trong <Link to={`/venues/${pendingVenue.id}`} className="font-semibold underline">trang quản lý địa điểm</Link>.
+            </div>
+          )}
+          <form onSubmit={handleSubmit(onSubmitAdd)} noValidate className="space-y-5" aria-busy={isSubmitting}>
+            <fieldset disabled={isSubmitting || !!pendingVenue} className="space-y-5 disabled:opacity-70">
             {/* ── Tên địa điểm ── */}
             <div>
               <label htmlFor="venue-name" className="mb-1.5 block text-xs font-semibold text-gray-700">
@@ -726,6 +759,8 @@ export function VenuesPage() {
               </div>
             </div>
 
+            </fieldset>
+            <VenueImagePicker key={imageResetKey} file={venueImage} onFileChange={setVenueImage} disabled={isSubmitting} progress={imageProgress} />
             {/* ── Nút submit ── */}
             <div className="flex items-center gap-3 pt-2">
               <button
@@ -736,19 +771,27 @@ export function VenuesPage() {
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Đang tạo...
+                    {imageProgress !== null ? "Đang tải ảnh..." : "Đang tạo..."}
                   </span>
                 ) : (
-                  "Tạo địa điểm"
+                  pendingVenue ? (venueImage ? "Thử tải lại ảnh" : "Hoàn tất địa điểm") : "Tạo địa điểm"
                 )}
               </button>
               <button
                 type="button"
-                onClick={() => reset()}
+                onClick={() => {
+                  if (pendingVenue) completeCreatedVenue(pendingVenue);
+                  else {
+                    reset();
+                    setVenueImage(null);
+                    setImageResetKey((key) => key + 1);
+                    setAddError(null);
+                  }
+                }}
                 disabled={isSubmitting}
                 className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
               >
-                Đặt lại
+                {pendingVenue ? "Hoàn tất, thêm ảnh sau" : "Đặt lại"}
               </button>
             </div>
           </form>

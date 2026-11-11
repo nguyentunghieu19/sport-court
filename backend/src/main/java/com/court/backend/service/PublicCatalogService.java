@@ -98,7 +98,8 @@ public class PublicCatalogService {
                 venue.getOpeningTime(),
                 venue.getClosingTime(),
                 policy,
-                fields);
+                fields,
+                venue.getImageUrl());
     }
 
     private VenueSummaryResponse toSummary(Venue venue, List<SportsField> activeFields) {
@@ -123,7 +124,8 @@ public class PublicCatalogService {
                 venue.getClosingTime(),
                 sportTypes,
                 activeFields.size(),
-                minBasePrice);
+                minBasePrice,
+                venue.getImageUrl());
     }
 
     // Chỉ thêm điều kiện lọc khi người dùng có truyền giá trị

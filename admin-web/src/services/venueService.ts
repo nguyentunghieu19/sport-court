@@ -33,6 +33,28 @@ export async function createVenue(
   return response.data;
 }
 
+export async function uploadVenueImage(
+  id: number,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<VenueResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiClient.post<VenueResponse>(`/api/owner/venues/${id}/image`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 90000,
+    onUploadProgress: (event) => {
+      if (event.total) onProgress?.(Math.min(100, Math.round(event.loaded * 100 / event.total)));
+    },
+  });
+  return response.data;
+}
+
+export async function deleteVenueImage(id: number): Promise<VenueResponse> {
+  const response = await apiClient.delete<VenueResponse>(`/api/owner/venues/${id}/image`, { timeout: 90000 });
+  return response.data;
+}
+
 /**
  * Lấy thông tin chi tiết một địa điểm
  * GET /api/owner/venues/{id}

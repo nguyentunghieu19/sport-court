@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { VenueImagePicker } from "./VenueImagePicker";
 import { getErrorMessage } from "../api/errorMessage";
 import * as venueService from "../services/venueService";
 import * as policyService from "../services/policyService";
@@ -83,6 +84,10 @@ export function VenueEditPage() {
   // Chỉnh sửa form
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [venueImage, setVenueImage] = useState<File | null>(null);
+  const [removeVenueImage, setRemoveVenueImage] = useState(false);
+  const [imageProgress, setImageProgress] = useState<number | null>(null);
+  const [imageResetKey, setImageResetKey] = useState(0);
 
   // Modal đổi trạng thái địa điểm (Tạm ngừng / Mở lại)
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -179,6 +184,10 @@ export function VenueEditPage() {
       setLoadError(null);
       const data = await venueService.getVenueById(venueId);
       setVenue(data);
+      setVenueImage(null);
+      setRemoveVenueImage(false);
+      setImageResetKey((key) => key + 1);
+      setSaveError(null);
       reset({
         name: data.name ?? "",
         address: data.address ?? "",
@@ -414,36 +423,53 @@ export function VenueEditPage() {
     }
   };
 
-  // Submit cập nhật địa điểm (PUT /api/owner/venues/{id})
+  // Lưu thông tin trước; nếu tải ảnh lỗi, lần thử tiếp chỉ lưu phần còn thay đổi.
   const onSubmitUpdate = async (values: UpdateVenueRequest) => {
-    if (!venueId) return;
+    if (!venueId || !venue) return;
     setSaveError(null);
     setSaveSuccess(null);
+    let detailsSaved = false;
     try {
-      const updated = await venueService.updateVenue(venueId, {
-        name: values.name.trim(),
-        address: values.address.trim(),
-        city: values.city.trim(),
-        district: values.district.trim(),
-        description: values.description ? values.description.trim() : "",
-        phone: values.phone.trim(),
-        openingTime: values.openingTime,
-        closingTime: values.closingTime,
-      });
+      let updated = venue;
+      if (isDirty) {
+        updated = await venueService.updateVenue(venueId, {
+          name: values.name.trim(),
+          address: values.address.trim(),
+          city: values.city.trim(),
+          district: values.district.trim(),
+          description: values.description ? values.description.trim() : "",
+          phone: values.phone.trim(),
+          openingTime: values.openingTime,
+          closingTime: values.closingTime,
+        });
+        setVenue(updated);
+        reset({
+          name: updated.name,
+          address: updated.address,
+          city: updated.city,
+          district: updated.district,
+          description: updated.description ?? "",
+          phone: updated.phone,
+          openingTime: updated.openingTime ? updated.openingTime.substring(0, 5) : "06:00",
+          closingTime: updated.closingTime ? updated.closingTime.substring(0, 5) : "22:00",
+        });
+        detailsSaved = true;
+      }
+      if (venueImage) {
+        setImageProgress(0);
+        updated = await venueService.uploadVenueImage(venueId, venueImage, setImageProgress);
+      } else if (removeVenueImage) {
+        updated = await venueService.deleteVenueImage(venueId);
+      }
       setVenue(updated);
-      setSaveSuccess("Đã lưu thay đổi thông tin địa điểm thành công!");
-      reset({
-        name: updated.name,
-        address: updated.address,
-        city: updated.city,
-        district: updated.district,
-        description: updated.description ?? "",
-        phone: updated.phone,
-        openingTime: updated.openingTime ? updated.openingTime.substring(0, 5) : "06:00",
-        closingTime: updated.closingTime ? updated.closingTime.substring(0, 5) : "22:00",
-      });
+      setVenueImage(null);
+      setRemoveVenueImage(false);
+      setImageResetKey((key) => key + 1);
+      setSaveSuccess("Đã lưu thay đổi địa điểm thành công!");
     } catch (err) {
-      setSaveError(getErrorMessage(err));
+      setSaveError(`${detailsSaved ? "Thông tin địa điểm đã được lưu, nhưng thay đổi ảnh chưa được lưu. " : ""}${getErrorMessage(err)}`);
+    } finally {
+      setImageProgress(null);
     }
   };
 
@@ -733,7 +759,8 @@ export function VenueEditPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmitUpdate)} noValidate className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmitUpdate)} noValidate className="space-y-5" aria-busy={isSubmitting}>
+            <VenueImagePicker key={imageResetKey} file={venueImage} onFileChange={setVenueImage} currentImageUrl={venue?.imageUrl} removeCurrent={removeVenueImage} onRemoveChange={setRemoveVenueImage} disabled={isSubmitting} progress={imageProgress} />
             {/* Tên địa điểm */}
             <div>
               <label htmlFor="edit-name" className="mb-1.5 block text-xs font-semibold text-gray-700">
@@ -904,13 +931,13 @@ export function VenueEditPage() {
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (!isDirty && !venueImage && !removeVenueImage)}
                 className="rounded-xl bg-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Đang lưu...
+                    {imageProgress !== null ? "Đang tải ảnh..." : "Đang lưu..."}
                   </span>
                 ) : (
                   "Lưu thay đổi"
@@ -919,7 +946,7 @@ export function VenueEditPage() {
               <button
                 type="button"
                 onClick={() => fetchVenue()}
-                disabled={isSubmitting || !isDirty}
+                disabled={isSubmitting || (!isDirty && !venueImage && !removeVenueImage)}
                 className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
               >
                 Hủy thay đổi

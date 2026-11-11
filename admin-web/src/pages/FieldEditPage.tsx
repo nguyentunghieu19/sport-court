@@ -197,7 +197,7 @@ export function FieldEditPage() {
       sportType: values.sportType,
       basePrice: Number(values.basePrice),
       capacity: values.capacity ? Number(values.capacity) : undefined,
-      imageUrl: values.imageUrl ? values.imageUrl.trim() : undefined,
+      ...(isEditMode ? { imageUrl: values.imageUrl?.trim() || undefined } : {}),
       description: values.description ? values.description.trim() : undefined,
     };
 
@@ -479,8 +479,8 @@ export function FieldEditPage() {
             </div>
           </div>
 
-          {/* Sức chứa & Link ảnh */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Sức chứa */}
+          <div className={`grid grid-cols-1 gap-4${isEditMode ? " sm:grid-cols-2" : ""}`}>
             <div>
               <label htmlFor="field-capacity" className="mb-1.5 block text-xs font-semibold text-gray-700">
                 Sức chứa tối đa (người)
@@ -496,7 +496,7 @@ export function FieldEditPage() {
               />
             </div>
 
-            <div>
+            {isEditMode && <div>
               <label htmlFor="field-image" className="mb-1.5 block text-xs font-semibold text-gray-700">
                 Đường dẫn hình ảnh sân
               </label>
@@ -508,7 +508,7 @@ export function FieldEditPage() {
                 className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100 disabled:opacity-50"
                 {...register("imageUrl")}
               />
-            </div>
+            </div>}
           </div>
 
           {/* Mô tả */}

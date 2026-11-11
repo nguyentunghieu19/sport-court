@@ -59,14 +59,14 @@ public class VenueService {
     public VenueResponse update(Long ownerId, Long venueId, VenueRequest request) {
         validateHours(request);
 
-        Venue venue = ownerAccessService.requireOwnedVenue(ownerId, venueId);
+        Venue venue = ownerAccessService.requireOwnedVenueForUpdate(ownerId, venueId);
         applyRequest(venue, request);
         return VenueResponse.from(venueRepository.save(venue));
     }
 
     @Transactional
     public VenueResponse changeStatus(Long ownerId, Long venueId, VenueStatusRequest request) {
-        Venue venue = ownerAccessService.requireOwnedVenue(ownerId, venueId);
+        Venue venue = ownerAccessService.requireOwnedVenueForUpdate(ownerId, venueId);
         venue.setStatus(request.status());
         return VenueResponse.from(venueRepository.save(venue));
     }

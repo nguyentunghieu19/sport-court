@@ -51,6 +51,12 @@ public class Venue {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
+
+    @Column(name = "image_public_id", columnDefinition = "text")
+    private String imagePublicId;
+
     @Column(name = "phone", length = 20)
     private String phone;
 

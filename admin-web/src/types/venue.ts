@@ -1,6 +1,7 @@
 // Khớp VenueResponse của backend
 export interface VenueResponse {
   id: number;
+  imageUrl?: string | null;
   ownerId: number;
   name: string;
   address: string;

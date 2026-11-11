@@ -15,6 +15,7 @@ public record VenueSummaryResponse(
         LocalTime closingTime,
         List<String> sportTypes,
         int fieldCount,
-        BigDecimal minBasePrice
+        BigDecimal minBasePrice,
+        String imageUrl
 ) {
 }

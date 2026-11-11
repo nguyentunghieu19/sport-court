@@ -20,3 +20,10 @@ app.vnpay.tmn-code=MA_TMN_CODE_CUA_BAN
 app.vnpay.hash-secret=HASH_SECRET_CUA_BAN
 app.vnpay.pay-url=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
 app.vnpay.return-url=http://localhost:8080/api/public/payments/vnpay/return
+
+# Cloudinary: có thể đặt trực tiếp trong application.properties cá nhân (đã bị gitignore),
+# hoặc cấu hình 3 biến môi trường bên dưới rồi khởi động lại backend.
+app.cloudinary.cloud-name=${CLOUDINARY_CLOUD_NAME:}
+app.cloudinary.api-key=${CLOUDINARY_API_KEY:}
+app.cloudinary.api-secret=${CLOUDINARY_API_SECRET:}
+# Các giá trị này không được đưa vào React/Android hoặc commit khóa thật lên Git.

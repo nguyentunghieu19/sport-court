@@ -14,6 +14,7 @@ public record VenueDetailResponse(
         LocalTime openingTime,
         LocalTime closingTime,
         PolicyResponse policy,
-        List<PublicFieldResponse> fields
+        List<PublicFieldResponse> fields,
+        String imageUrl
 ) {
 }
