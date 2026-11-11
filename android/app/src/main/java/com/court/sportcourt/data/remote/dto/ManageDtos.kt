@@ -12,7 +12,8 @@ data class ManagedVenueResponse(
     val phone: String? = null,
     val openingTime: String? = null,
     val closingTime: String? = null,
-    val status: String = "ACTIVE"
+    val status: String = "ACTIVE",
+    val imageUrl: String? = null
 )
 
 @Serializable

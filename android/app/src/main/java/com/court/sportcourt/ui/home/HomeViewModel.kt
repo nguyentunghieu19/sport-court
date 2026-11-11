@@ -20,6 +20,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 enum class HomeTab {
@@ -103,17 +107,17 @@ class HomeViewModel @Inject constructor(
             val notificationList = mutableListOf<NotificationItem>()
 
             // 1. Tải thông báo Hoàn tiền từ Staff/Admin (GET /api/refunds/my)
-            when (val refundResult = paymentRepository.getMyRefunds(page = 0, size = 10)) {
+            when (val refundResult = paymentRepository.getMyRefunds(page = 0, size = 20)) {
                 is ApiResult.Success -> {
-                    refundResult.data.content.forEachIndexed { index, refund ->
+                    refundResult.data.content.forEach { refund ->
                         val isRefunded = refund.status == "SUCCEEDED"
                         notificationList.add(
                             NotificationItem(
                                 id = 10000L + refund.id,
                                 title = if (isRefunded) "🟢 Staff đã hoàn tiền thành công! 🎉" else "💸 Yêu cầu hoàn tiền đang xử lý",
                                 message = "Đơn ${refund.bookingCode ?: ""} đã được Staff/Chủ sân ${if (isRefunded) "hoàn tiền thành công: " else "tiếp nhận yêu cầu hoàn tiền: "}${refund.amount.toLong()} đ. ${if (!refund.referenceNote.isNullOrBlank()) "Ghi chú: ${refund.referenceNote}" else ""}",
-                                time = if (index == 0) "Vừa xong" else "${(index + 1) * 20} phút trước",
-                                isUnread = index == 0
+                                time = formatTimeAgo(if (isRefunded) refund.completedAt else refund.requestedAt),
+                                isUnread = !isRefunded
                             )
                         )
                     }
@@ -122,9 +126,9 @@ class HomeViewModel @Inject constructor(
             }
 
             // 2. Tải thông báo Đơn hàng/Hủy đơn từ Staff/Admin (GET /api/bookings/my)
-            when (val bookingResult = bookingRepository.getMyBookings(page = 0, size = 10)) {
+            when (val bookingResult = bookingRepository.getMyBookings(page = 0, size = 20)) {
                 is ApiResult.Success -> {
-                    bookingResult.data.content.forEachIndexed { index, booking ->
+                    bookingResult.data.content.forEach { booking ->
                         when (booking.status) {
                             "CONFIRMED" -> {
                                 notificationList.add(
@@ -132,19 +136,23 @@ class HomeViewModel @Inject constructor(
                                         id = booking.id,
                                         title = "🎉 Đặt sân thành công!",
                                         message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"} - ${booking.fieldName ?: "Sân"}) ngày ${booking.date ?: ""} (${booking.startTime ?: ""} - ${booking.endTime ?: ""}) đã được xác nhận lịch chơi.",
-                                        time = if (index == 0) "Vừa xong" else "${(index + 1) * 15} phút trước",
-                                        isUnread = index == 0
+                                        time = formatTimeAgo(booking.startAt),
+                                        isUnread = false
                                     )
                                 )
                             }
                             "CANCELLED" -> {
+                                val isCheckedInCancel = !booking.checkedInAt.isNullOrBlank()
                                 notificationList.add(
                                     NotificationItem(
                                         id = booking.id + 5000L,
-                                        title = "🔴 Đơn đặt sân đã bị hủy",
-                                        message = "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"}) ngày ${booking.date ?: ""} đã bị hủy. ${if (!booking.cancellationReason.isNullOrBlank()) "Lý do: ${booking.cancellationReason}" else ""}",
-                                        time = "${(index + 1) * 30} phút trước",
-                                        isUnread = false
+                                        title = if (isCheckedInCancel) "⚠️ Đơn đã check-in đã bị hủy" else "🔴 Đơn đặt sân đã bị hủy",
+                                        message = if (isCheckedInCancel)
+                                            "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"}) đã check-in vừa được xử lý hủy. ${if (!booking.cancellationReason.isNullOrBlank()) "Lý do: ${booking.cancellationReason}" else ""}"
+                                        else
+                                            "Đơn ${booking.bookingCode} (${booking.venueName ?: "Cụm sân"}) ngày ${booking.date ?: ""} đã bị hủy. ${if (!booking.cancellationReason.isNullOrBlank()) "Lý do: ${booking.cancellationReason}" else ""}",
+                                        time = formatTimeAgo(booking.cancelledAt),
+                                        isUnread = true
                                     )
                                 )
                             }
@@ -154,7 +162,7 @@ class HomeViewModel @Inject constructor(
                                         id = booking.id,
                                         title = "🟡 Đơn đặt sân chờ thanh toán cọc",
                                         message = "Đơn ${booking.bookingCode} đang trong thời gian giữ chỗ 15 phút. Vui lòng thanh toán cọc để hoàn tất.",
-                                        time = "Vừa xong",
+                                        time = formatTimeAgo(booking.expiresAt),
                                         isUnread = true
                                     )
                                 )
@@ -166,6 +174,29 @@ class HomeViewModel @Inject constructor(
             }
 
             _uiState.update { it.copy(notifications = notificationList) }
+        }
+    }
+
+    private fun formatTimeAgo(timeStr: String?): String {
+        if (timeStr.isNullOrBlank()) return "Vừa xong"
+        return try {
+            val instant = Instant.parse(timeStr)
+            val now = Instant.now()
+            val diffMinutes = ChronoUnit.MINUTES.between(instant, now)
+            val diffHours = ChronoUnit.HOURS.between(instant, now)
+            val diffDays = ChronoUnit.DAYS.between(instant, now)
+
+            when {
+                diffMinutes < 1 -> "Vừa xong"
+                diffMinutes < 60 -> "$diffMinutes phút trước"
+                diffHours < 24 -> "$diffHours giờ trước"
+                diffDays < 7 -> "$diffDays ngày trước"
+                else -> DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                    .withZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                    .format(instant)
+            }
+        } catch (e: Exception) {
+            "Vừa xong"
         }
     }
 
@@ -208,7 +239,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(400)
+            delay(100)
             loadVenues(page = 0, isInitial = true)
         }
     }
@@ -254,7 +285,7 @@ class HomeViewModel @Inject constructor(
                 district = state.selectedDistrict,
                 sportType = state.selectedSportCode,
                 page = page,
-                size = 10
+                size = 5 // Cố định 5 địa điểm sân trên 1 trang theo yêu cầu
             )
 
             when (result) {

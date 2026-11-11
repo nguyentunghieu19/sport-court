@@ -42,6 +42,7 @@ data class VenueResponse(
     val city: String? = null,
     val district: String? = null,
     val description: String? = null,
+    val imageUrl: String? = null,
     val phone: String? = null,
     val openingTime: String? = null,
     val closingTime: String? = null,

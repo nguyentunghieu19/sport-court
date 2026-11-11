@@ -1,6 +1,7 @@
 package com.court.sportcourt.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -47,6 +49,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -108,8 +115,8 @@ fun HomeScreen(
                     )
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.refreshVenues() }) {
-                        Text("Làm mới", fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { viewModel.refreshVenues() }) {
+                        Text("🔄", style = MaterialTheme.typography.titleMedium)
                     }
                     if (session != null) {
                         TextButton(onClick = { viewModel.logout(onLoggedOut) }) {
@@ -190,6 +197,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(Color(0xFFE2F1E7))
         ) {
             when (uiState.currentTab) {
                 HomeTab.HOME -> HomeContentView(
@@ -664,99 +672,141 @@ private fun VenueCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5))
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    CustomerIcon(CustomerIconKind.COURT, modifier = Modifier.padding(12.dp).size(28.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = venue.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = "Quận: ${venue.district ?: ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                CustomerIcon(CustomerIconKind.ARROW, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CustomerIcon(CustomerIconKind.LOCATION, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text = "${venue.address}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
+        Column {
+            // Ảnh Banner Địa Điểm Sân (Nạp trực tiếp từ imageUrl Backend)
+            if (!venue.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = venue.imageUrl,
+                    contentDescription = venue.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
                 )
             }
-            if (venue.sportTypes.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    venue.sportTypes.forEach { sportCode ->
-                        val displayLabel = when (sportCode) {
-                            "FOOTBALL" -> "Bóng đá"
-                            "BADMINTON" -> "Cầu lông"
-                            "TENNIS" -> "Tennis"
-                            "PICKLEBALL" -> "Pickleball"
-                            "BASKETBALL" -> "Bóng rổ"
-                            else -> sportCode
-                        }
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        CustomerIcon(CustomerIconKind.COURT, modifier = Modifier.padding(12.dp).size(28.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = venue.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(3.dp))
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = displayLabel,
+                                text = "Quận: ${venue.district ?: ""}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     }
+                    CustomerIcon(CustomerIconKind.ARROW, modifier = Modifier.size(20.dp))
                 }
-            }
-            Spacer(Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Giá từ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                Spacer(Modifier.height(14.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CustomerIcon(CustomerIconKind.LOCATION, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        text = if (formattedPrice != null) "$formattedPrice/giờ" else "Chưa có sân",
+                        text = "${venue.address}${if (!venue.city.isNullOrBlank()) ", ${venue.city}" else ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (venue.sportTypes.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        venue.sportTypes.forEach { sportCode ->
+                            val displayLabel = when (sportCode) {
+                                "FOOTBALL" -> "Bóng đá"
+                                "BADMINTON" -> "Cầu lông"
+                                "TENNIS" -> "Tennis"
+                                "PICKLEBALL" -> "Pickleball"
+                                "BASKETBALL" -> "Bóng rổ"
+                                else -> sportCode
+                            }
+                            Surface(
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "🏆 $displayLabel",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                HorizontalDivider()
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (formattedPrice != null) "Giá từ: $formattedPrice/giờ" else "Giá từ: Chưa có sân",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
+
+                    Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "Chi tiết →",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        maxLines = 1
+                    )
                 }
-                Text("Xem chi tiết", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
+}
 }
 
 @Composable
@@ -768,7 +818,7 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Thông báo của bạn",
+            text = "Thông báo hệ thống 🔔",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -778,14 +828,15 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
         if (notifications.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5)),
+                border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Bạn chưa có thông báo.", style = MaterialTheme.typography.titleMedium)
+                    Text("🔔 Bạn không có thông báo nào.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
@@ -796,11 +847,12 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
                         .padding(bottom = 12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (notif.isUnread)
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            Color(0xFFECFDF5)
                         else
-                            MaterialTheme.colorScheme.surface
+                            Color(0xFFF4FBF7)
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
@@ -823,6 +875,7 @@ private fun NotificationsContentView(notifications: List<NotificationItem>) {
                                 Text(
                                     text = notif.time,
                                     style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )

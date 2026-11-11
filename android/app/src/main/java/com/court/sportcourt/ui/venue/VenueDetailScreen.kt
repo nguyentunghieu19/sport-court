@@ -31,6 +31,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -119,9 +120,11 @@ fun VenueDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = Color(0xFFECFDF5)
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(18.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
@@ -222,9 +225,11 @@ fun VenueDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = Color(0xFFECFDF5)
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(18.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -310,15 +315,15 @@ private fun FieldItemCard(
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.5.dp, if (isMaintenance) Color(0xFFFECDD3) else Color(0xFFA7F3D0)),
         colors = CardDefaults.cardColors(
             containerColor = if (isMaintenance)
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
             else
-                MaterialTheme.colorScheme.surface
+                Color(0xFFECFDF5)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(

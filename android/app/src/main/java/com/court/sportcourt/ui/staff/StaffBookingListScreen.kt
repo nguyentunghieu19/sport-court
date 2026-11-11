@@ -1,6 +1,8 @@
 package com.court.sportcourt.ui.staff
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -268,7 +270,9 @@ private fun StaffBookingItemCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5))
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -316,6 +320,7 @@ private fun StaffBookingItemCard(
                         color = when (booking.status) {
                             "PENDING_PAYMENT" -> MaterialTheme.colorScheme.secondaryContainer
                             "CONFIRMED" -> MaterialTheme.colorScheme.primaryContainer
+                            "NO_SHOW" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                             else -> MaterialTheme.colorScheme.surfaceVariant
                         },
                         shape = RoundedCornerShape(8.dp)
@@ -324,6 +329,8 @@ private fun StaffBookingItemCard(
                             text = when (booking.status) {
                                 "PENDING_PAYMENT" -> "🟡 Chờ cọc"
                                 "CONFIRMED" -> "🟢 Đã xác nhận"
+                                "COMPLETED" -> "🎉 Hoàn thành"
+                                "NO_SHOW" -> "⚠️ Vắng mặt (No-show)"
                                 else -> "🔴 Đã hủy"
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -331,6 +338,7 @@ private fun StaffBookingItemCard(
                             color = when (booking.status) {
                                 "PENDING_PAYMENT" -> MaterialTheme.colorScheme.onSecondaryContainer
                                 "CONFIRMED" -> MaterialTheme.colorScheme.onPrimaryContainer
+                                "NO_SHOW" -> MaterialTheme.colorScheme.error
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

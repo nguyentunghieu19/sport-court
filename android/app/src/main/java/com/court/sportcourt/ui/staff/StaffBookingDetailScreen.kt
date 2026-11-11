@@ -195,6 +195,7 @@ fun StaffBookingDetailScreen(
                                 color = when (booking.status) {
                                     "PENDING_PAYMENT" -> MaterialTheme.colorScheme.secondaryContainer
                                     "CONFIRMED" -> MaterialTheme.colorScheme.primaryContainer
+                                    "NO_SHOW" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                                     else -> MaterialTheme.colorScheme.errorContainer
                                 },
                                 shape = RoundedCornerShape(8.dp)
@@ -203,6 +204,8 @@ fun StaffBookingDetailScreen(
                                     text = when (booking.status) {
                                         "PENDING_PAYMENT" -> "🟡 Chờ cọc"
                                         "CONFIRMED" -> "🟢 Đã xác nhận"
+                                        "COMPLETED" -> "🎉 Hoàn thành"
+                                        "NO_SHOW" -> "⚠️ Vắng mặt (No-show)"
                                         else -> "🔴 Đã hủy"
                                     },
                                     style = MaterialTheme.typography.labelMedium,

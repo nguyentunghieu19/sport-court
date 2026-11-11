@@ -86,10 +86,12 @@ fun ProfileScreen(
             )
         },
         bottomBar = {
-            AppBottomNavigationBar(
-                currentTab = NavigationTab.PROFILE,
-                onTabSelected = onTabSelected
-            )
+            if (state.role != "STAFF" && state.role != "OWNER") {
+                AppBottomNavigationBar(
+                    currentTab = NavigationTab.PROFILE,
+                    onTabSelected = onTabSelected
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->

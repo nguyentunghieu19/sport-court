@@ -1,6 +1,8 @@
 package com.court.sportcourt.ui.booking
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -194,9 +196,10 @@ private fun BookingItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5))
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -217,21 +220,25 @@ private fun BookingItemCard(
                     color = when (booking.status) {
                         "PENDING_PAYMENT" -> MaterialTheme.colorScheme.secondaryContainer
                         "CONFIRMED" -> MaterialTheme.colorScheme.primaryContainer
+                        "NO_SHOW" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                         else -> MaterialTheme.colorScheme.errorContainer
                     },
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = when (booking.status) {
-                            "PENDING_PAYMENT" -> "Chờ cọc"
-                            "CONFIRMED" -> "Đã xác nhận"
-                            else -> "Đã hủy"
+                            "PENDING_PAYMENT" -> "🟡 Chờ cọc"
+                            "CONFIRMED" -> "🟢 Đã xác nhận"
+                            "COMPLETED" -> "🎉 Hoàn thành"
+                            "NO_SHOW" -> "⚠️ Vắng mặt"
+                            else -> "🔴 Đã hủy"
                         },
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         color = when (booking.status) {
                             "PENDING_PAYMENT" -> MaterialTheme.colorScheme.onSecondaryContainer
                             "CONFIRMED" -> MaterialTheme.colorScheme.onPrimaryContainer
+                            "NO_SHOW" -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.onErrorContainer
                         },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

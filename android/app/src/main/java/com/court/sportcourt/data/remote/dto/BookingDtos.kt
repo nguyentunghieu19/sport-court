@@ -32,6 +32,7 @@ data class BookingResponse(
     val status: String = "PENDING_PAYMENT",
     val customerNote: String? = null,
     val expiresAt: String? = null,
+    val checkedInAt: String? = null,
     val cancelledAt: String? = null,
     val cancellationReason: String? = null,
     val createdAt: String? = null
