@@ -1,6 +1,7 @@
 package com.court.backend.service;
 
 import com.court.backend.entity.Venue;
+import com.court.backend.entity.User;
 import com.court.backend.enums.VenueStatus;
 import com.court.backend.repository.BookingPolicyRepository;
 import com.court.backend.repository.SportsFieldRepository;
@@ -37,6 +38,7 @@ class PublicVenueImageTest {
         venue = new Venue();
         venue.setId(7L);
         venue.setName("Cụm sân Xuân Thủy");
+        venue.setOwner(new User());
         venue.setStatus(VenueStatus.ACTIVE);
     }
 

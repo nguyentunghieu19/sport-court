@@ -48,7 +48,9 @@ public class AvailabilityService {
     public AvailabilityResponse getAvailability(Long fieldId, LocalDate date) {
         SportsField field = sportsFieldRepository.findById(fieldId)
                 .filter(f -> f.getStatus() != FieldStatus.INACTIVE
-                        && f.getVenue().getStatus() == VenueStatus.ACTIVE)
+                        && f.getVenue().getStatus() == VenueStatus.ACTIVE
+                        && !f.getVenue().isAdminHidden()
+                        && f.getVenue().getOwner().getDeletedAt() == null)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sân"));
         Venue venue = field.getVenue();
 

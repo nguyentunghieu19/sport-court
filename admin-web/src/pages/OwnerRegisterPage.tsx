@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import { useAuth } from "../auth/authContext";
 import { ArrowIcon, AuthLayout } from "../layouts/AuthLayout";
+import { AuthRoleChoice } from "../auth/AuthRoleChoice";
+import { roleHome, safeReturnTo } from "../auth/authNavigation";
+import type { LoginMode } from "../types/auth";
 import "./OwnerRegisterPage.css";
 
 interface OwnerRegisterForm {
@@ -15,7 +18,14 @@ interface OwnerRegisterForm {
 }
 
 export function OwnerRegisterPage() {
-  const { session, registerOwner } = useAuth();
+  return <RegisterPage initialMode="management" />;
+}
+
+export function RegisterPage({ initialMode = "customer" }: { initialMode?: LoginMode }) {
+  const { session, registerCustomer, registerOwner } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode = searchParams.get("mode") === "management" ? "management" : searchParams.get("mode") === "customer" ? "customer" : initialMode;
+  const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [registrationSubmitted, setRegistrationSubmitted] = useState(false);
@@ -30,14 +40,15 @@ export function OwnerRegisterPage() {
   });
 
   if (session) {
-    return <Navigate to={registrationSubmitted ? "/venues" : "/"} replace state={registrationSubmitted ? { registeredOwner: true } : undefined} />;
+    const createdOwner = registrationSubmitted && session.role === "OWNER";
+    return <Navigate to={createdOwner ? "/venues" : session.role === "USER" && returnTo ? returnTo : roleHome(session.role)} replace state={createdOwner ? { registeredOwner: true } : undefined} />;
   }
 
   const onSubmit = async (values: OwnerRegisterForm) => {
     setServerError(null);
     setRegistrationSubmitted(true);
     try {
-      await registerOwner({
+      await (mode === "customer" ? registerCustomer : registerOwner)({
         fullName: values.fullName.trim(),
         email: values.email.trim().toLowerCase() || null,
         phone: values.phone.replace(/\s/g, "") || null,
@@ -50,17 +61,23 @@ export function OwnerRegisterPage() {
   };
 
   return (
-    <AuthLayout registration>
+    <AuthLayout registration customer={mode === "customer"}>
       <div className="sc-login-form-area">
         <ol className="sc-register-steps" aria-label="Các bước bắt đầu">
           <li aria-current="step"><span>01</span> Tạo tài khoản</li>
-          <li><span>02</span> Thiết lập sân</li>
+          <li><span>02</span> {mode === "customer" ? "Chọn sân yêu thích" : "Thiết lập sân"}</li>
         </ol>
 
         <header className="sc-login-form-heading">
-          <h2 id="sc-login-title">Đăng ký chủ sân<span>.</span></h2>
-          <p>Tạo tài khoản để bắt đầu quản lý sân của bạn. Sau đó, bạn có thể thêm địa điểm và sân thi đấu.</p>
+          <h2 id="sc-login-title">{mode === "customer" ? "Gia nhập sân chơi" : "Đăng ký chủ sân"}<span>.</span></h2>
+          <p>{mode === "customer" ? "Một tài khoản cho cả web và ứng dụng SportCourt. Đặt sân và quản lý lịch chơi ở bất cứ đâu." : "Tạo tài khoản để bắt đầu quản lý sân của bạn. Sau đó, bạn có thể thêm địa điểm và sân thi đấu."}</p>
         </header>
+
+        <AuthRoleChoice mode={mode} disabled={isSubmitting} onChange={(next) => {
+          setServerError(null);
+          setSearchParams((previous) => { const params = new URLSearchParams(previous); params.set("mode", next); return params; }, { replace: true });
+        }} />
+        {mode === "management" && <p className="sc-auth-role-explanation">Đăng ký tại đây sẽ tạo tài khoản <strong>chủ sân</strong>. Tài khoản admin và nhân viên được cấp bởi người quản lý.</p>}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={isSubmitting}>
           <div className="sc-login-field">
@@ -194,13 +211,13 @@ export function OwnerRegisterPage() {
           {serverError && <div className="sc-login-server-error" role="alert">{serverError}</div>}
 
           <button type="submit" disabled={isSubmitting} className="sc-login-submit">
-            <span>{isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản chủ sân"}</span>
+            <span>{isSubmitting ? "Đang tạo tài khoản..." : mode === "customer" ? "Tạo tài khoản người dùng" : "Tạo tài khoản chủ sân"}</span>
             {isSubmitting ? <span className="sc-login-spinner" aria-hidden="true" /> : <ArrowIcon />}
           </button>
         </form>
 
-        <p className="sc-auth-switch">Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
-        <p className="sc-register-staff-note">Bạn là nhân viên? Hãy liên hệ chủ sân để được cấp tài khoản.</p>
+        <p className="sc-auth-switch">Đã có tài khoản? <Link to={`/login?mode=${mode}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`}>Đăng nhập</Link></p>
+        <p className="sc-register-staff-note">{mode === "management" ? "Bạn là nhân viên? Hãy liên hệ chủ sân để được cấp tài khoản." : <Link to="/">← Quay lại khám phá sân</Link>}</p>
       </div>
     </AuthLayout>
   );

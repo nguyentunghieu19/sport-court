@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,8 +53,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +73,7 @@ import com.court.sportcourt.ui.customer.CourtArtwork
 import com.court.sportcourt.ui.customer.CustomerIcon
 import com.court.sportcourt.ui.customer.CustomerIconKind
 import com.court.sportcourt.ui.customer.CustomerSectionLabel
+import com.court.sportcourt.ui.customer.CustomerVenueImage
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -681,18 +681,11 @@ private fun VenueCard(
         colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5))
     ) {
         Column {
-            // Ảnh Banner Địa Điểm Sân (Nạp trực tiếp từ imageUrl Backend)
-            if (!venue.imageUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = venue.imageUrl,
-                    contentDescription = venue.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                )
-            }
+            CustomerVenueImage(
+                imageUrl = venue.imageUrl,
+                venueName = venue.name,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+            )
 
             Column(modifier = Modifier.padding(18.dp)) {
                 Row(

@@ -33,6 +33,7 @@ class OwnerVenueImageControllerTest {
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
     @MockitoBean VenueImageService images;
+    @MockitoBean com.court.backend.repository.UserRepository users;
 
     @Test void anonymousCannotUploadOrDelete() throws Exception {
         mvc.perform(multipart("/api/owner/venues/7/image").file(file())).andExpect(status().isUnauthorized());
@@ -79,6 +80,7 @@ class OwnerVenueImageControllerTest {
 
     private String token(UserRole role) {
         User user = new User(); user.setId(1L); user.setRole(role);
+        when(users.findById(1L)).thenReturn(java.util.Optional.of(user));
         return "Bearer " + jwt.generateToken(user);
     }
 

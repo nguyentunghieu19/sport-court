@@ -1,11 +1,13 @@
 import { createContext, useContext } from "react";
-import type { RegisterOwnerRequest, UserSession } from "../types/auth";
+import type { LoginMode, RegisterCustomerRequest, RegisterOwnerRequest, UserSession } from "../types/auth";
 
 export interface AuthContextValue {
   session: UserSession | null;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string, mode?: LoginMode) => Promise<void>;
+  registerCustomer: (request: RegisterCustomerRequest) => Promise<void>;
   registerOwner: (request: RegisterOwnerRequest) => Promise<void>;
   logout: () => void;
+  updateFullName: (fullName: string) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

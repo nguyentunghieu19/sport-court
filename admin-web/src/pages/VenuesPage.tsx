@@ -461,6 +461,7 @@ export function VenuesPage() {
                         >
                           {s.text}
                         </span>
+                        {venue.adminHidden && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">Quản trị viên đã tạm ẩn</span>}
                       </div>
                       <p className="mt-1 text-xs text-gray-500 truncate">
                         <svg className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

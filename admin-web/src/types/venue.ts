@@ -2,6 +2,8 @@
 export interface VenueResponse {
   id: number;
   imageUrl?: string | null;
+  adminHidden?: boolean;
+  adminHiddenReason?: string | null;
   ownerId: number;
   name: string;
   address: string;

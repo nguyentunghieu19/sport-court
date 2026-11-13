@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
 import { useAuth } from "../auth/authContext";
 import { ArrowIcon, AuthLayout } from "../layouts/AuthLayout";
+import { AuthRoleChoice } from "../auth/AuthRoleChoice";
+import { roleHome, safeReturnTo } from "../auth/authNavigation";
 
 interface LoginFormValues {
   identifier: string;
@@ -12,6 +14,9 @@ interface LoginFormValues {
 
 export function LoginPage() {
   const { session, login } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode = searchParams.get("mode") === "management" ? "management" : "customer";
+  const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showAccountHelp, setShowAccountHelp] = useState(false);
@@ -23,20 +28,20 @@ export function LoginPage() {
   } = useForm<LoginFormValues>();
 
   if (session) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={session.role === "USER" && returnTo ? returnTo : roleHome(session.role)} replace />;
   }
 
   const onSubmit = async (values: LoginFormValues) => {
     setServerError(null);
     try {
-      await login(values.identifier.trim(), values.password);
+      await login(values.identifier.trim(), values.password, mode);
     } catch (error) {
       setServerError(getErrorMessage(error));
     }
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout customer={mode === "customer"}>
       <div className="sc-login-form-area">
         <div className="sc-login-welcome-icon" aria-hidden="true">
           <svg viewBox="0 0 28 28" fill="none">
@@ -46,8 +51,13 @@ export function LoginPage() {
         <header className="sc-login-form-heading">
           <p className="sc-login-eyebrow">SẴN SÀNG VÀO SÂN?</p>
           <h2 id="sc-login-title">Chào mừng trở lại<span>.</span></h2>
-          <p>Đăng nhập để quản lý sân, theo dõi lịch đặt<br className="sc-login-desktop-break" /> và bắt nhịp ngày mới.</p>
+          <p>{mode === "customer" ? "Tìm sân yêu thích, đặt lịch và sẵn sàng cho trận đấu tiếp theo." : "Đăng nhập để quản lý sân, theo dõi lịch đặt và bắt nhịp ngày mới."}</p>
         </header>
+
+        <AuthRoleChoice mode={mode} disabled={isSubmitting} onChange={(next) => {
+          setServerError(null);
+          setSearchParams((previous) => { const params = new URLSearchParams(previous); params.set("mode", next); return params; }, { replace: true });
+        }} />
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={isSubmitting}>
           <div className="sc-login-field">
@@ -130,7 +140,7 @@ export function LoginPage() {
 
           {showAccountHelp && (
             <div id="sc-login-account-help" className="sc-login-account-help" role="status">
-              Nếu bạn là nhân viên, hãy liên hệ chủ sân để được đặt lại mật khẩu. Nếu bạn là chủ sân, hãy liên hệ người quản trị hệ thống để được hỗ trợ.
+              {mode === "customer" ? "Vui lòng liên hệ quản trị viên để được hỗ trợ đặt lại mật khẩu. Tính năng lấy lại mật khẩu qua email chưa được hỗ trợ." : "Nếu bạn là nhân viên, hãy liên hệ chủ sân để được đặt lại mật khẩu. Chủ sân và quản trị viên vui lòng liên hệ người quản trị hệ thống để được hỗ trợ."}
             </div>
           )}
 
@@ -143,12 +153,12 @@ export function LoginPage() {
         </form>
 
         <p className="sc-auth-switch">
-          Bạn là chủ sân mới? <Link to="/register-owner">Đăng ký chủ sân <span aria-hidden="true">↗</span></Link>
+          Chưa có tài khoản? <Link to={`/register?mode=${mode}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`}>{mode === "customer" ? "Đăng ký người dùng" : "Đăng ký chủ sân"} <span aria-hidden="true">↗</span></Link>
         </p>
 
         <div className="sc-login-account-note">
           <span aria-hidden="true" />
-          Dành cho chủ sân & nhân viên
+          <Link to="/">Khám phá sân mà không cần đăng nhập →</Link>
         </div>
       </div>
     </AuthLayout>

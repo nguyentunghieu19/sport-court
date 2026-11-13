@@ -18,6 +18,8 @@ public record VenueResponse(
         LocalTime openingTime,
         LocalTime closingTime,
         String status,
+        boolean adminHidden,
+        String adminHiddenReason,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -36,6 +38,8 @@ public record VenueResponse(
                 venue.getOpeningTime(),
                 venue.getClosingTime(),
                 venue.getStatus().name(),
+                venue.isAdminHidden(),
+                venue.getAdminHiddenReason(),
                 venue.getCreatedAt(),
                 venue.getUpdatedAt());
     }

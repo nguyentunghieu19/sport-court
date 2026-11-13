@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface VenueStaffRepository extends JpaRepository<VenueStaff, Long> {
 
+    boolean existsByStaffId(Long staffId);
+
     // Các địa điểm mà nhân viên đang được phân công
     @Query("select vs.venue.id from VenueStaff vs where vs.staff.id = :staffId and vs.active = true")
     List<Long> findActiveVenueIdsByStaffId(@Param("staffId") Long staffId);

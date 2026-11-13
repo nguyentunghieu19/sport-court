@@ -712,6 +712,13 @@ export function VenueEditPage() {
       </div>
 
       {/* ── THÔNG BÁO CHUNG ── */}
+      {venue.adminHidden && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status">
+          <p className="text-sm font-bold">Địa điểm đang bị quản trị viên tạm ẩn</p>
+          <p className="mt-1 text-sm leading-relaxed">{venue.adminHiddenReason || "Vui lòng liên hệ quản trị viên để biết thêm thông tin."}</p>
+          <p className="mt-2 text-xs leading-relaxed">Địa điểm chưa thể nhận đơn mới. Việc đổi trạng thái hoạt động không gỡ lệnh tạm ẩn; các đơn đã có vẫn được giữ để xử lý.</p>
+        </div>
+      )}
       {saveSuccess && (
         <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 shadow-xs">
           <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="currentColor" viewBox="0 0 24 24">

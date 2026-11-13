@@ -22,6 +22,7 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "users")
+@org.hibernate.annotations.DynamicUpdate
 public class User {
 
     @Id
@@ -53,6 +54,12 @@ public class User {
 
     @Column(name = "phone_verified", nullable = false)
     private boolean phoneVerified = false;
+
+    @Column(name = "token_version", nullable = false)
+    private long tokenVersion;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

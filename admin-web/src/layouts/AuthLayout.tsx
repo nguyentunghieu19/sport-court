@@ -65,7 +65,7 @@ function CourtIllustration() {
   );
 }
 
-export function AuthLayout({ children, registration = false }: { children: ReactNode; registration?: boolean }) {
+export function AuthLayout({ children, registration = false, customer = false }: { children: ReactNode; registration?: boolean; customer?: boolean }) {
   const [motionPaused, setMotionPaused] = useState(false);
 
   return (
@@ -102,10 +102,10 @@ export function AuthLayout({ children, registration = false }: { children: React
               <span /> YOUR COURT. YOUR GAME.
             </div>
             <h1 id="sc-login-hero-title">
-              Làm chủ<br />
-              <span>sân chơi.</span>
+              {customer ? "Sẵn sàng" : "Làm chủ"}<br />
+              <span>{customer ? "ra sân." : "sân chơi."}</span>
             </h1>
-            <p>{registration ? "Đưa sân của bạn lên SportCourt. Quản lý lịch đặt, đội ngũ và hoạt động tại sân trong một nơi." : <>Mỗi trận đấu hay, bắt đầu từ một sân chơi<br className="sc-login-desktop-break" /> được vận hành tốt.</>}</p>
+            <p>{customer ? "Tìm sân phù hợp, chọn giờ yêu thích và tận hưởng từng khoảnh khắc cùng đồng đội." : registration ? "Đưa sân của bạn lên SportCourt. Quản lý lịch đặt, đội ngũ và hoạt động tại sân trong một nơi." : <>Mỗi trận đấu hay, bắt đầu từ một sân chơi<br className="sc-login-desktop-break" /> được vận hành tốt.</>}</p>
           </div>
 
           <CourtIllustration />
@@ -123,7 +123,7 @@ export function AuthLayout({ children, registration = false }: { children: React
 
         <section className="sc-login-panel" aria-labelledby="sc-login-title">
           <div className="sc-login-panel-top">
-            <span className="sc-login-eyebrow">{registration ? "DÀNH RIÊNG CHO CHỦ SÂN" : "KHÔNG GIAN QUẢN TRỊ"}</span>
+            <span className="sc-login-eyebrow">{customer ? "KHÔNG GIAN NGƯỜI CHƠI" : registration ? "DÀNH RIÊNG CHO CHỦ SÂN" : "KHÔNG GIAN QUẢN TRỊ"}</span>
             <span className="sc-login-panel-number" aria-hidden="true">{registration ? "02 / SC" : "01 / SC"}</span>
           </div>
 

@@ -49,7 +49,7 @@ public class UserService {
     private User getActiveUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Tài khoản không tồn tại"));
-        if (!user.isActive()) {
+        if (!user.isActive() || user.getDeletedAt() != null) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khóa");
         }
         return user;

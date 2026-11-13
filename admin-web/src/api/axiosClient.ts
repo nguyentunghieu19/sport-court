@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearSession, getSession } from "../auth/sessionStore";
+import { safeReturnTo } from "../auth/authNavigation";
 
 const baseURL: string =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
@@ -28,8 +29,12 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       getSession()
     ) {
+      const previous = getSession();
       clearSession();
-      window.location.assign("/login");
+      const params = new URLSearchParams({ mode: previous?.role === "USER" ? "customer" : "management" });
+      const returnTo = safeReturnTo(window.location.pathname + window.location.search);
+      if (previous?.role === "USER" && returnTo) params.set("returnTo", returnTo);
+      window.location.assign(`/login?${params}`);
     }
     return Promise.reject(error);
   },

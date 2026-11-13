@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,7 @@ import com.court.sportcourt.ui.customer.CourtArtwork
 import com.court.sportcourt.ui.customer.CustomerIcon
 import com.court.sportcourt.ui.customer.CustomerIconKind
 import com.court.sportcourt.ui.customer.CustomerSectionLabel
+import com.court.sportcourt.ui.customer.CustomerVenueImage
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -126,6 +128,11 @@ fun VenueDetailScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(18.dp)
                 ) {
+                    CustomerVenueImage(
+                        imageUrl = venue.imageUrl,
+                        venueName = venue.name,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically

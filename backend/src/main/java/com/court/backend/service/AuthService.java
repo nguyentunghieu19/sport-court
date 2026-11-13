@@ -78,7 +78,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, INVALID_LOGIN);
         }
-        if (!user.isActive()) {
+        if (user.getDeletedAt() != null || !user.isActive()) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khóa");
         }
 

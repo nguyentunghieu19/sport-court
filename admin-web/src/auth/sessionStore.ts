@@ -36,3 +36,11 @@ export function getSession(): UserSession | null {
 export function clearSession(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+export function updateSessionFullName(fullName: string): UserSession | null {
+  const session = getSession();
+  if (!session) return null;
+  const updated = { ...session, fullName };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+}

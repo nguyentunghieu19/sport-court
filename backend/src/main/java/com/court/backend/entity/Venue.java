@@ -71,6 +71,19 @@ public class Venue {
     @Column(name = "status", nullable = false)
     private VenueStatus status = VenueStatus.ACTIVE;
 
+    @Column(name = "admin_hidden", nullable = false)
+    private boolean adminHidden = false;
+
+    @Column(name = "admin_hidden_reason", columnDefinition = "text")
+    private String adminHiddenReason;
+
+    @Column(name = "admin_hidden_at")
+    private Instant adminHiddenAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_hidden_by")
+    private User adminHiddenBy;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

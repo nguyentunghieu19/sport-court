@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -61,6 +62,7 @@ class OwnerRegistrationTest {
     @BeforeEach
     void setUpRepository() {
         savedUsers.clear();
+        when(users.findById(anyLong())).thenAnswer(invocation -> savedUsers.stream().filter(user -> user.getId().equals(invocation.getArgument(0))).findFirst());
         when(users.existsByEmail(anyString())).thenAnswer(invocation ->
                 savedUsers.stream().anyMatch(user -> invocation.getArgument(0).equals(user.getEmail())));
         when(users.existsByPhone(anyString())).thenAnswer(invocation ->

@@ -17,7 +17,7 @@ type AdminOutletContext = {
 };
 
 function getBreadcrumb(pathname: string): BreadcrumbItem[] {
-  if (pathname === "/") {
+  if (pathname === "/manage") {
     return [{ label: "Trang chủ" }];
   }
 
@@ -123,11 +123,11 @@ export function AdminLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login", { replace: true });
+    navigate("/login?mode=management", { replace: true });
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
-  const isHome = location.pathname === "/";
+  const isHome = location.pathname === "/manage";
   const isStatistics = location.pathname === "/statistics";
   const isStaffManagement = location.pathname.startsWith("/staff");
   const isVenues = location.pathname.startsWith("/venues");
@@ -237,7 +237,7 @@ export function AdminLayout() {
           }
         >
           <Link
-            to="/"
+            to="/manage"
             onClick={closeMobileMenu}
             title={sidebarCollapsed ? "SportCourt" : undefined}
             className="flex items-center gap-3"
@@ -279,7 +279,7 @@ export function AdminLayout() {
             </h2>
             <div className="mt-2 space-y-1">
               <Link
-                to="/"
+                to="/manage"
                 onClick={closeMobileMenu}
                 title={sidebarCollapsed ? "Trang chủ" : undefined}
                 aria-current={isHome ? "page" : undefined}

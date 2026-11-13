@@ -13,6 +13,15 @@ import java.util.Optional;
 
 public interface VenueRepository extends JpaRepository<Venue, Long>, JpaSpecificationExecutor<Venue> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select v from Venue v where v.id = :id")
+    Optional<Venue> findForAdminUpdate(@Param("id") Long id);
+
+    boolean existsByOwnerId(Long ownerId);
+    long countByAdminHiddenTrue();
+    @Query("select count(v) from Venue v where v.status = :status and v.adminHidden = false and v.owner.deletedAt is null")
+    long countByStatusAndAdminHiddenFalse(@Param("status") com.court.backend.enums.VenueStatus status);
+
     List<Venue> findByOwnerIdOrderByCreatedAtDesc(Long ownerId);
 
     Optional<Venue> findByIdAndOwnerId(Long id, Long ownerId);

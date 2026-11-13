@@ -10,6 +10,9 @@ export interface RegisterOwnerRequest {
   password: string;
 }
 
+export type RegisterCustomerRequest = RegisterOwnerRequest;
+export type LoginMode = "customer" | "management";
+
 // Khớp AuthResponse của backend
 export interface AuthResponse {
   accessToken: string;

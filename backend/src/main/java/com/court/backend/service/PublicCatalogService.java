@@ -74,7 +74,8 @@ public class PublicCatalogService {
     @Transactional(readOnly = true)
     public VenueDetailResponse getVenueDetail(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
-                .filter(v -> v.getStatus() == VenueStatus.ACTIVE)
+                .filter(v -> v.getStatus() == VenueStatus.ACTIVE && !v.isAdminHidden()
+                        && v.getOwner().getDeletedAt() == null)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy địa điểm"));
 
         List<PublicFieldResponse> fields = sportsFieldRepository
@@ -134,6 +135,8 @@ public class PublicCatalogService {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), VenueStatus.ACTIVE));
+            predicates.add(cb.isFalse(root.get("adminHidden")));
+            predicates.add(cb.isNull(root.get("owner").get("deletedAt")));
 
             if (hasText(city)) {
                 predicates.add(cb.equal(cb.lower(root.<String>get("city")), city.trim().toLowerCase()));

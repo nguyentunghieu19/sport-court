@@ -209,7 +209,7 @@ public class BookingService {
     private User getActiveCustomer(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Tài khoản không tồn tại"));
-        if (!user.isActive()) {
+        if (!user.isActive() || user.getDeletedAt() != null) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khóa");
         }
         if (user.getRole() != UserRole.USER) {
@@ -221,7 +221,9 @@ public class BookingService {
     private SportsField findBookableField(Long fieldId) {
         SportsField field = sportsFieldRepository.findById(fieldId)
                 .filter(f -> f.getStatus() != FieldStatus.INACTIVE
-                        && f.getVenue().getStatus() == VenueStatus.ACTIVE)
+                        && f.getVenue().getStatus() == VenueStatus.ACTIVE
+                        && !f.getVenue().isAdminHidden()
+                        && f.getVenue().getOwner().getDeletedAt() == null)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sân"));
         if (field.getStatus() != FieldStatus.ACTIVE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Sân đang bảo trì, hiện không nhận đặt");

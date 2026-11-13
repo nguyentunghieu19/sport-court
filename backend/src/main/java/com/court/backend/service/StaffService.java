@@ -97,7 +97,7 @@ public class StaffService {
                 .collect(Collectors.groupingBy(assignment -> assignment.getStaff().getId()));
 
         return userRepository.findAllById(staffIds).stream()
-                .filter(user -> user.getRole() == UserRole.STAFF)
+                .filter(user -> user.getRole() == UserRole.STAFF && user.getDeletedAt() == null)
                 .sorted(Comparator.comparing(User::getFullName, String.CASE_INSENSITIVE_ORDER))
                 .map(user -> toResponse(user, assignmentsByStaff.getOrDefault(user.getId(), List.of())))
                 .toList();
@@ -140,6 +140,7 @@ public class StaffService {
         ownerAccessService.requireActiveOwner(ownerId);
         User staff = requireStaffOfOwner(ownerId, staffId);
 
+        if (staff.isActive() != active) staff.setTokenVersion(staff.getTokenVersion() + 1);
         staff.setActive(active);
         userRepository.saveAndFlush(staff);
         return buildResponse(staff, ownerId);
@@ -191,6 +192,7 @@ public class StaffService {
         User staff = requireStaffOfOwner(ownerId, staffId);
 
         staff.setPasswordHash(passwordEncoder.encode(newPassword));
+        staff.setTokenVersion(staff.getTokenVersion() + 1);
         userRepository.save(staff);
     }
 
@@ -201,7 +203,7 @@ public class StaffService {
         }
         User staff = userRepository.findById(staffId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy nhân viên"));
-        if (staff.getRole() != UserRole.STAFF) {
+        if (staff.getRole() != UserRole.STAFF || staff.getDeletedAt() != null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy nhân viên");
         }
         return staff;
