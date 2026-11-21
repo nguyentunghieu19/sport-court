@@ -21,7 +21,8 @@ data class RegisterUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val registered: Boolean = false,
-    val otp: String = "", val emailToken: String = "", val otpMessage: String = ""
+    val otp: String = "", val emailToken: String = "", val otpMessage: String = "",
+    val otpDialogOpen: Boolean = false
 )
 
 @HiltViewModel
@@ -31,6 +32,7 @@ class RegisterViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
+    private var retryAt = 0L
 
     fun onFullNameChange(value: String) {
         _uiState.update { it.copy(fullName = value, errorMessage = null) }
@@ -62,18 +64,35 @@ class RegisterViewModel @Inject constructor(
             return
         }
 
+        sendOtp()
+    }
+
+    fun confirmOtp() {
+        val state = _uiState.value
+        if (state.isLoading || !state.otpDialogOpen || state.otp.length != 6) return
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
+            var token = state.emailToken
+            if (token.isBlank()) {
+                when (val proof = authRepository.emailOtp(state.email.trim(), state.otp)) {
+                    is ApiResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = proof.message) }
+                        return@launch
+                    }
+                    is ApiResult.Success -> token = proof.data
+                }
+                _uiState.update { it.copy(emailToken = token) }
+            }
             val result = authRepository.register(
                 fullName = state.fullName,
                 email = state.email,
                 phone = state.phone,
                 password = state.password,
-                emailToken = state.emailToken
+                emailToken = token
             )
             when (result) {
                 is ApiResult.Success ->
-                    _uiState.update { it.copy(isLoading = false, registered = true) }
+                    _uiState.update { it.copy(isLoading = false, registered = true, otpDialogOpen = false) }
 
                 is ApiResult.Error ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
@@ -85,19 +104,32 @@ class RegisterViewModel @Inject constructor(
     private fun validate(state: RegisterUiState): String? = when {
         state.fullName.isBlank() -> "Vui lòng nhập họ tên"
         state.email.isBlank() -> "Email là bắt buộc"
-        state.emailToken.isBlank() -> "Vui lòng xác minh OTP email trước"
+        !android.util.Patterns.EMAIL_ADDRESS.matcher(state.email.trim()).matches() -> "Email không hợp lệ"
+        state.fullName.trim().length > 150 -> "Họ tên tối đa 150 ký tự"
+        state.email.trim().length > 255 -> "Email tối đa 255 ký tự"
+        state.phone.isNotBlank() && !Regex("^(\\+84|0)\\d{9,10}$").matches(state.phone.replace(" ", "")) -> "Số điện thoại không hợp lệ"
         state.password.length < 8 -> "Mật khẩu phải từ 8 ký tự"
+        state.password.isBlank() -> "Mật khẩu không được chỉ chứa khoảng trắng"
+        state.password.toByteArray(Charsets.UTF_8).size > 72 -> "Mật khẩu quá dài"
         state.password != state.confirmPassword -> "Mật khẩu nhập lại không khớp"
         else -> null
     }
     fun onOtpChange(value: String) { _uiState.update { it.copy(otp = value.filter(Char::isDigit).take(6)) } }
-    fun emailOtp(verify: Boolean) {
+    fun closeOtp() { if (!_uiState.value.isLoading) _uiState.update { it.copy(otpDialogOpen = false, otp = "", errorMessage = null) } }
+    fun sendOtp() {
         val state = _uiState.value
         if (state.isLoading || state.email.isBlank()) return
+        if (System.currentTimeMillis() < retryAt) {
+            _uiState.update { it.copy(errorMessage = "Vui lòng chờ 60 giây trước khi gửi lại mã.") }
+            return
+        }
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            when(val result = authRepository.emailOtp(state.email, if(verify) state.otp else null)) {
-                is ApiResult.Success -> _uiState.update { if(it.email == state.email) it.copy(isLoading = false, emailToken = result.data, otpMessage = if(verify) "Đã xác minh email" else "Nếu email đủ điều kiện, mã đã gửi. Chờ 60 giây để gửi lại.") else it.copy(isLoading=false) }
+            when(val result = authRepository.emailOtp(state.email.trim())) {
+                is ApiResult.Success -> {
+                    retryAt = System.currentTimeMillis() + 60000
+                    _uiState.update { it.copy(isLoading = false, otpDialogOpen = true, emailToken = "", otp = "", otpMessage = "Nhập mã 6 số trong email. Kiểm tra cả thư rác; mã có hiệu lực 5 phút.") }
+                }
                 is ApiResult.Error -> _uiState.update { it.copy(isLoading=false,errorMessage=result.message) }
             }
         }

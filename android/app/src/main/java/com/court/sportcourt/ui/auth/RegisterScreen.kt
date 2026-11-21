@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +41,34 @@ fun RegisterScreen(
         if (state.registered) onRegistered()
     }
 
+    if (state.otpDialogOpen) {
+        AlertDialog(
+            onDismissRequest = viewModel::closeOtp,
+            title = { Text("Xác nhận email") },
+            text = {
+                Column {
+                    Text(state.email)
+                    Spacer(Modifier.height(8.dp))
+                    Text(state.otpMessage)
+                    OutlinedTextField(
+                        value = state.otp, onValueChange = viewModel::onOtpChange,
+                        label = { Text("Mã OTP 6 số") }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !state.isLoading, modifier = Modifier.fillMaxWidth()
+                    )
+                    state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    TextButton(onClick = viewModel::sendOtp, enabled = !state.isLoading) { Text("Gửi lại mã") }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmOtp, enabled = !state.isLoading && state.otp.length == 6) {
+                    Text(if (state.isLoading) "Đang xử lý…" else "Xác nhận và tạo tài khoản")
+                }
+            },
+            dismissButton = { TextButton(onClick = viewModel::closeOtp, enabled = !state.isLoading) { Text("Quay lại") } }
+        )
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -58,7 +87,7 @@ fun RegisterScreen(
                 onValueChange = viewModel::onFullNameChange,
                 label = { Text("Họ và tên") },
                 singleLine = true,
-                enabled = !state.isLoading,
+                enabled = !state.isLoading && !state.otpDialogOpen,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
@@ -107,11 +136,7 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            TextButton(onClick = { viewModel.emailOtp(false) }, enabled = !state.isLoading) { Text("Gửi / gửi lại OTP email") }
-            OutlinedTextField(value = state.otp, onValueChange = viewModel::onOtpChange, label = { Text("OTP 6 số trong email") }, enabled = !state.isLoading, modifier = Modifier.fillMaxWidth())
-            TextButton(onClick = { viewModel.emailOtp(true) }, enabled = !state.isLoading && state.otp.length == 6) { Text("Xác minh email") }
-            if (state.otpMessage.isNotBlank()) Text(state.otpMessage)
-            state.errorMessage?.let { message ->
+            state.errorMessage?.takeIf { !state.otpDialogOpen }?.let { message ->
                 Spacer(Modifier.height(12.dp))
                 Text(message, color = MaterialTheme.colorScheme.error)
             }

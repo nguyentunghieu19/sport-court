@@ -93,3 +93,10 @@
   .sc-owner-register .sc-login-form-area { margin-top: 24px; }
   .sc-register-steps { margin-bottom: 22px; gap: 12px 18px; }
 }
+.sc-register-otp-dialog { margin: auto; width: min(440px, calc(100vw - 32px)); border: 1px solid #dce5d8; border-radius: 20px; padding: 28px; color: #193c30; background: #fcfdf9; box-shadow: 0 24px 80px #0003; }
+.sc-register-otp-dialog::backdrop { background: #092a22a6; }
+.sc-register-otp-dialog h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+.sc-register-otp-dialog p { margin-bottom: 16px; overflow-wrap: anywhere; }
+.sc-register-otp-dialog input { display: block; width: 100%; border: 1px solid #aebfa6; border-radius: 12px; padding: 14px; margin: 8px 0 20px; font-size: 24px; letter-spacing: 4px; }
+.sc-register-otp-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; margin-top: 20px; font-size: 14px; }
+.sc-register-otp-actions button { color: #155e48; text-decoration: underline; }

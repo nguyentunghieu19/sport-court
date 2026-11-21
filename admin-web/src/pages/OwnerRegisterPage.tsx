@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useSearchParams } from "react-router";
 import { getErrorMessage } from "../api/errorMessage";
@@ -8,7 +8,7 @@ import { AuthRoleChoice } from "../auth/AuthRoleChoice";
 import { roleHome, safeReturnTo } from "../auth/authNavigation";
 import type { LoginMode } from "../types/auth";
 import "./OwnerRegisterPage.css";
-import { EmailOtpProof, type EmailProof } from "./EmailOtpProof";
+import publicApiClient from "../api/publicApiClient";
 
 interface OwnerRegisterForm {
   fullName: string;
@@ -29,13 +29,22 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
   const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailProof, setEmailProof] = useState<EmailProof>({email:"",token:""});
+  const [pending, setPending] = useState<{ values: OwnerRegisterForm; mode: LoginMode } | null>(null);
+  const [code, setCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [retryAt, setRetryAt] = useState(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const verifiedToken = useRef("");
+  useEffect(() => {
+    if (pending) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [pending]);
   const [registrationSubmitted, setRegistrationSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
     getValues,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<OwnerRegisterForm>({
     defaultValues: { fullName: "", email: "", phone: "", password: "", confirmPassword: "" },
@@ -49,22 +58,53 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
 
   const onSubmit = async (values: OwnerRegisterForm) => {
     setServerError(null);
-    if (!emailProof.token || emailProof.email !== values.email.trim().toLowerCase()) {
-      setServerError("Vui lòng nhập email thật và xác minh OTP trước khi đăng ký."); return;
-    }
+    try {
+      const email = values.email.trim().toLowerCase();
+      await publicApiClient.post(`/api/auth/${mode === "customer" ? "register" : "register-owner"}/request-otp`, { email });
+      setCode("");
+      verifiedToken.current = "";
+      setOtpError("");
+      setRetryAt(Date.now() + 60000);
+      setPending({ values: { ...values, email }, mode });
+    } catch (error) { setServerError(getErrorMessage(error)); }
+  };
+
+  const confirmOtp = async () => {
+    if (!pending || otpBusy) return;
+    setOtpBusy(true);
+    setOtpError("");
+    const { values, mode: submittedMode } = pending;
     setRegistrationSubmitted(true);
     try {
-      await (mode === "customer" ? registerCustomer : registerOwner)({
+      if (!verifiedToken.current) {
+        const result = await publicApiClient.post<{ token: string }>(`/api/auth/${submittedMode === "customer" ? "register" : "register-owner"}/verify-otp`, { email: values.email, code });
+        verifiedToken.current = result.data.token;
+      }
+      await (submittedMode === "customer" ? registerCustomer : registerOwner)({
         fullName: values.fullName.trim(),
         email: values.email.trim().toLowerCase() || null,
         phone: values.phone.replace(/\s/g, "") || null,
         password: values.password,
-        emailToken: emailProof.token,
+        emailToken: verifiedToken.current,
       });
     } catch (error) {
       setRegistrationSubmitted(false);
-      setServerError(getErrorMessage(error));
-    }
+      setOtpError(getErrorMessage(error));
+    } finally { setOtpBusy(false); }
+  };
+
+  const resendOtp = async () => {
+    if (!pending || otpBusy) return;
+    if (Date.now() < retryAt) { setOtpError("Vui lòng chờ 60 giây trước khi gửi lại mã."); return; }
+    setOtpBusy(true);
+    setOtpError("");
+    try {
+      await publicApiClient.post(`/api/auth/${pending.mode === "customer" ? "register" : "register-owner"}/request-otp`, { email: pending.values.email });
+      setRetryAt(Date.now() + 60000);
+      setCode("");
+      verifiedToken.current = "";
+    } catch (error) { setOtpError(getErrorMessage(error)); }
+    finally { setOtpBusy(false); }
   };
 
   return (
@@ -159,7 +199,6 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
             </div>
           </div>
 
-          <EmailOtpProof key={mode + watch("email")} email={watch("email")} purpose={mode === "customer" ? "register" : "register-owner"} onVerified={setEmailProof} />
           <div className="sc-login-field sc-register-password">
             <div className="sc-login-label-row">
               <label htmlFor="owner-password">Mật khẩu</label>
@@ -219,10 +258,25 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
           {serverError && <div className="sc-login-server-error" role="alert">{serverError}</div>}
 
           <button type="submit" disabled={isSubmitting} className="sc-login-submit">
-            <span>{isSubmitting ? "Đang tạo tài khoản..." : mode === "customer" ? "Tạo tài khoản người dùng" : "Tạo tài khoản chủ sân"}</span>
+            <span>{isSubmitting ? "Đang gửi mã xác nhận..." : mode === "customer" ? "Tạo tài khoản người dùng" : "Tạo tài khoản chủ sân"}</span>
             {isSubmitting ? <span className="sc-login-spinner" aria-hidden="true" /> : <ArrowIcon />}
           </button>
         </form>
+
+        <dialog ref={dialog} className="sc-register-otp-dialog" aria-labelledby="register-otp-title" onCancel={(event) => { event.preventDefault(); if (!otpBusy) setPending(null); }}>
+          <form onSubmit={(event) => { event.preventDefault(); void confirmOtp(); }}>
+            <h2 id="register-otp-title">Xác nhận email</h2>
+            <p>Nhập mã 6 số gửi đến <strong>{pending?.values.email}</strong>. Kiểm tra cả thư rác. Mã có hiệu lực 5 phút.</p>
+            <label htmlFor="register-otp">Mã OTP</label>
+            <input id="register-otp" autoFocus autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" required maxLength={6} value={code} disabled={otpBusy} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="Nhập 6 chữ số" />
+            {otpError && <p className="sc-login-field-error" role="alert">{otpError}</p>}
+            <button className="sc-login-submit" type="submit" disabled={otpBusy || code.length !== 6}>{otpBusy ? "Đang xử lý..." : "Xác nhận và tạo tài khoản"}</button>
+            <div className="sc-register-otp-actions">
+              <button type="button" disabled={otpBusy} onClick={resendOtp}>Gửi lại mã</button>
+              <button type="button" disabled={otpBusy} onClick={() => setPending(null)}>Quay lại chỉnh thông tin</button>
+            </div>
+          </form>
+        </dialog>
 
         <p className="sc-auth-switch">Đã có tài khoản? <Link to={`/login?mode=${mode}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`}>Đăng nhập</Link></p>
         <p className="sc-register-staff-note">{mode === "management" ? "Bạn là nhân viên? Hãy liên hệ chủ sân để được cấp tài khoản." : <Link to="/">← Quay lại khám phá sân</Link>}</p>
