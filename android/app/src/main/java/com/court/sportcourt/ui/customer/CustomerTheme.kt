@@ -1,7 +1,6 @@
 package com.court.sportcourt.ui.customer
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -34,7 +33,7 @@ private val CustomerLightColors = lightColorScheme(
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFFFF0CC),
     onTertiaryContainer = Color(0xFF624A13),
-    background = Color(0xFFF5F7F5),
+    background = Color.White,
     onBackground = Color(0xFF192B22),
     surface = Color.White,
     onSurface = Color(0xFF192B22),
@@ -78,7 +77,7 @@ private val CustomerDarkColors = darkColorScheme(
 @Composable
 fun CustomerTheme(enabled: Boolean = true, content: @Composable () -> Unit) {
     val typography = MaterialTheme.typography
-    val darkTheme = isSystemInDarkTheme()
+    val darkTheme = false
     val colors = if (darkTheme) CustomerDarkColors else CustomerLightColors
     val view = LocalView.current
     val window = (view.context as? Activity)?.window

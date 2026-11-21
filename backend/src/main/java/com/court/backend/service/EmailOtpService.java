@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 public class EmailOtpService {
+ private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EmailOtpService.class);
  private final JdbcTemplate db;
  private final UserRepository users;
  private final PasswordEncoder passwords;
@@ -118,9 +119,19 @@ public class EmailOtpService {
   try {
    String body=json.writeValueAsString(Map.of("sender",Map.of("email",sender,"name","SportCourt"),"to",List.of(Map.of("email",email)),"subject","SportCourt - "+subject,"textContent","Mã OTP của bạn: "+code+". Có hiệu lực 5 phút. Không chia sẻ mã này."));
    var req=HttpRequest.newBuilder(URI.create("https://api.brevo.com/v3/smtp/email")).timeout(Duration.ofSeconds(20)).header("api-key",apiKey).header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
-   var response=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build().send(req,HttpResponse.BodyHandlers.discarding());
-   if(response.statusCode()/100!=2)throw new IllegalStateException();
-  } catch(InterruptedException e){Thread.currentThread().interrupt();throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Chưa gửi được email, vui lòng thử lại");}
-  catch(Exception e){throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Chưa gửi được email. Kiểm tra cấu hình Brevo hoặc thử lại sau");}
+   var response=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build().send(req,HttpResponse.BodyHandlers.ofString());
+   if(response.statusCode()/100!=2) {
+    // Chỉ log mã lỗi đã lọc; không log response thô, địa chỉ email, key hay OTP.
+    String providerCode="unknown";
+    try {
+     String candidate=json.readTree(response.body()).path("code").asText();
+     if(candidate.matches("[a-zA-Z0-9_]{1,80}")) providerCode=candidate;
+    } catch(Exception ignored) { }
+    log.warn("Brevo rejected email: HTTP {}, code={}",response.statusCode(),providerCode);
+    throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Chưa gửi được email. Kiểm tra cấu hình Brevo hoặc thử lại sau");
+   }
+  } catch(ApiException e){throw e;}
+  catch(InterruptedException e){Thread.currentThread().interrupt();log.warn("Brevo request interrupted");throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Chưa gửi được email, vui lòng thử lại");}
+  catch(Exception e){log.warn("Brevo request failed: {}",e.getClass().getSimpleName());throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"Chưa gửi được email. Kiểm tra cấu hình Brevo hoặc thử lại sau");}
  }
 }

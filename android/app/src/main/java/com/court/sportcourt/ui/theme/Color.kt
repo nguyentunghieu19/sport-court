@@ -17,7 +17,7 @@ val GreenTertiary = Color(0xFF4CAF50)
 val GreenTertiaryContainer = Color(0xFFDCEDC8)
 val GreenOnTertiaryContainer = Color(0xFF33691E)
 
-val GreenBackground = Color(0xFFF4F7F4)
+val GreenBackground = Color(0xFFFFFFFF)
 val GreenOnBackground = Color(0xFF191C19)
 
 val GreenSurface = Color(0xFFFFFFFF)
