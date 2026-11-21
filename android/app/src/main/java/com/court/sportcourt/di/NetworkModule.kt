@@ -1,5 +1,7 @@
 package com.court.sportcourt.di
 
+import com.court.sportcourt.BuildConfig
+
 import com.court.sportcourt.data.local.TokenStorage
 import com.court.sportcourt.data.remote.AuthApi
 import com.court.sportcourt.data.remote.UserApi
@@ -34,7 +36,7 @@ annotation class AuthenticatedNetwork
 object NetworkModule {
 
     // Cấu hình mạng kết nối trực tiếp 127.0.0.1:8080 qua adb reverse
-    private const val BASE_URL = "http://127.0.0.1:8080/"
+    private val BASE_URL = BuildConfig.API_BASE_URL
 
     @Provides
     @Singleton

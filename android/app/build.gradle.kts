@@ -6,6 +6,10 @@ plugins {
     alias(libs.plugins.hilt.android) // MỚI (A3)
 }
 
+val sportCourtApiBaseUrl = providers.gradleProperty("SPORTCOURT_API_BASE_URL")
+    .orElse("https://sportcourt-api.onrender.com/")
+    .get()
+
 android {
     namespace = "com.court.sportcourt"
     compileSdk {
@@ -18,6 +22,8 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "API_BASE_URL", "\"$sportCourtApiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
