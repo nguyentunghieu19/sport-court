@@ -24,6 +24,8 @@ data class LoginUiState(
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
+    suspend fun recovery(email: String, code: String? = null) = authRepository.emailOtp(email, code, true)
+    suspend fun resetEmailPassword(email: String, token: String, password: String) = authRepository.resetEmailPassword(email, token, password)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()

@@ -25,6 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailOtpService emailOtpService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -41,8 +42,8 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         String phone = normalizePhone(request.phone());
 
-        if (email == null && phone == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Cần nhập email hoặc số điện thoại");
+        if (email == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Email là bắt buộc");
         }
         if (email != null && userRepository.existsByEmail(email)) {
             throw new ApiException(HttpStatus.CONFLICT, "Email đã được sử dụng");
@@ -55,11 +56,13 @@ public class AuthService {
         }
 
         User user = new User();
+        emailOtpService.consumeRegistration(email, role == UserRole.OWNER ? "REGISTER_OWNER" : "REGISTER_USER", request.emailToken());
         user.setFullName(request.fullName().trim());
         user.setEmail(email);
         user.setPhone(phone);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(role);
+        user.setEmailVerified(true);
         user = userRepository.save(user);
 
         return buildResponse(user);

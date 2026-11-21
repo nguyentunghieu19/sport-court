@@ -11,6 +11,7 @@ public record RegisterRequest(
         @Size(max = 150, message = "Họ tên tối đa 150 ký tự")
         String fullName,
 
+        @NotBlank(message = "Email là bắt buộc")
         @Email(message = "Email không hợp lệ")
         @Size(max = 255, message = "Email tối đa 255 ký tự")
         String email,
@@ -20,6 +21,10 @@ public record RegisterRequest(
 
         @NotBlank(message = "Mật khẩu không được để trống")
         @Size(min = 8, max = 72, message = "Mật khẩu từ 8 đến 72 ký tự")
-        String password
+        String password,
+        String emailToken
 ) {
+    public RegisterRequest(String fullName, String email, String phone, String password) {
+        this(fullName, email, phone, password, null);
+    }
 }

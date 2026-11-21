@@ -48,6 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(classes = {AuthController.class, OwnerVenueController.class,
         SecurityConfig.class, AuthService.class, JwtService.class, GlobalExceptionHandler.class})
 class OwnerRegistrationTest {
+    @MockitoBean com.court.backend.service.EmailOtpService emailOtpService;
     private static final String PASSWORD = "SportCourt123!";
 
     @Autowired MockMvc mvc;
@@ -106,8 +107,8 @@ class OwnerRegistrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"owner@example.test,NULL", "NULL,0912345678"}, nullValues = "NULL")
-    void ownerCanRegisterWithEitherContactAndLoginAgain(String email, String phone) throws Exception {
+    @CsvSource(value = {"owner@example.test,NULL", "owner@example.test,0912345678"}, nullValues = "NULL")
+    void ownerRegistersWithRequiredEmailAndOptionalPhone(String email, String phone) throws Exception {
         registerOwner(new RegisterRequest("Chủ sân", email, phone, PASSWORD)).andExpect(status().isCreated());
         var result = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("identifier", email != null ? email : phone, "password", PASSWORD))))
@@ -150,7 +151,7 @@ class OwnerRegistrationTest {
 
     @Test
     void duplicatePhoneCannotCreateAnotherAccount() throws Exception {
-        registerOwner(new RegisterRequest("Chủ sân", null, "0912345678", PASSWORD)).andExpect(status().isCreated());
+        registerOwner(new RegisterRequest("Chủ sân", "first@example.test", "0912345678", PASSWORD)).andExpect(status().isCreated());
         registerOwner(new RegisterRequest("Chủ sân khác", "another@example.test", "0912345678", PASSWORD))
                 .andExpect(status().isConflict()).andExpect(jsonPath("message").value("Số điện thoại đã được sử dụng"));
         assertThat(savedUsers).hasSize(1);

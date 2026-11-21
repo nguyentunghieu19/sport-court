@@ -1,4 +1,7 @@
 spring.application.name=backend
+app.brevo.api-key=${BREVO_API_KEY:}
+app.brevo.sender-email=${BREVO_SENDER_EMAIL:}
+app.otp.secret=${OTP_SECRET:}
 server.port=8080
 
 # Kết nối PostgreSQL: copy file này thành application.properties rồi sửa 3 giá trị viết hoa

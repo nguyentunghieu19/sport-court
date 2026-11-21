@@ -29,14 +29,16 @@ class AuthRepository @Inject constructor(
         fullName: String,
         email: String?,
         phone: String?,
-        password: String
+        password: String,
+        emailToken: String? = null
     ): ApiResult<Unit> = handle {
         authApi.register(
             RegisterRequest(
                 fullName = fullName.trim(),
                 email = email?.trim()?.ifBlank { null },
                 phone = phone?.trim()?.ifBlank { null },
-                password = password
+                password = password,
+                emailToken = emailToken
             )
         )
     }
@@ -44,6 +46,19 @@ class AuthRepository @Inject constructor(
     suspend fun login(identifier: String, password: String): ApiResult<Unit> = handle {
         authApi.login(LoginRequest(identifier = identifier.trim(), password = password))
     }
+    suspend fun emailOtp(email: String, code: String? = null, reset: Boolean = false): ApiResult<String> = try {
+        val response = if (reset && code == null) authApi.forgot(com.court.sportcourt.data.remote.dto.EmailOtpRequest(email.trim().lowercase()))
+        else if (reset) authApi.verifyReset(com.court.sportcourt.data.remote.dto.VerifyEmailOtpRequest(email.trim().lowercase(), code!!))
+        else if (code == null) authApi.requestOtp(com.court.sportcourt.data.remote.dto.EmailOtpRequest(email.trim().lowercase()))
+        else authApi.verifyOtp(com.court.sportcourt.data.remote.dto.VerifyEmailOtpRequest(email.trim().lowercase(), code))
+        if (response.isSuccessful) ApiResult.Success(response.body()?.token ?: "") else ApiResult.Error(parseErrorMessage(response))
+    } catch (e: IOException) { ApiResult.Error("Không kết nối được máy chủ") }
+      catch (e: SerializationException) { ApiResult.Error("Dữ liệu không hợp lệ") }
+    suspend fun resetEmailPassword(email: String, token: String, password: String): ApiResult<String> = try {
+        val response = authApi.reset(com.court.sportcourt.data.remote.dto.ResetEmailPasswordRequest(email.trim().lowercase(), token, password))
+        if(response.isSuccessful) ApiResult.Success("Đã đặt lại mật khẩu. Hãy đăng nhập lại.") else ApiResult.Error(parseErrorMessage(response))
+    } catch(e: IOException) { ApiResult.Error("Không kết nối được máy chủ") }
+      catch(e: SerializationException) { ApiResult.Error("Dữ liệu không hợp lệ") }
 
     suspend fun logout() {
         tokenStorage.clear()

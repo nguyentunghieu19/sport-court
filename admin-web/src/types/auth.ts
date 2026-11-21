@@ -4,6 +4,7 @@ export interface LoginRequest {
 }
 
 export interface RegisterOwnerRequest {
+  emailToken?: string;
   fullName: string;
   email: string | null;
   phone: string | null;

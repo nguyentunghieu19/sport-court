@@ -48,7 +48,7 @@ class RegistrationAfterAccountDeletionTest {
         when(jwt.generateToken(any())).thenReturn("test-token");
         when(jwt.getExpiresInSeconds()).thenReturn(3600L);
         var encoder = new BCryptPasswordEncoder();
-        var auth = new AuthService(users, encoder, jwt);
+        var auth = new AuthService(users, encoder, jwt, mock(EmailOtpService.class));
         var original = auth.registerOwner(new RegisterRequest("Chủ sân cũ", "reuse@example.test", "0912345678", "OldPassword123!"));
         User oldUser = records.get(original.userId());
         oldUser.setEmailVerified(true); oldUser.setPhoneVerified(true);
@@ -69,7 +69,7 @@ class RegistrationAfterAccountDeletionTest {
         assertThat(history.getUser().getId()).isEqualTo(original.userId());
         assertThat(oldUser.getDeletedAt()).isNotNull();
         User newUser = records.get(fresh.userId());
-        assertThat(newUser.isEmailVerified()).isFalse();
+        assertThat(newUser.isEmailVerified()).isTrue();
         assertThat(newUser.isPhoneVerified()).isFalse();
         assertThat(newUser.getDeletedAt()).isNull();
         assertThat(newUser.getTokenVersion()).isZero();

@@ -19,7 +19,6 @@ export function LoginPage() {
   const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showAccountHelp, setShowAccountHelp] = useState(false);
 
   const {
     register,
@@ -89,15 +88,9 @@ export function LoginPage() {
           <div className="sc-login-field">
             <div className="sc-login-label-row">
               <label htmlFor="password">Mật khẩu</label>
-              <button
-                type="button"
-                className="sc-login-help-toggle"
-                aria-expanded={showAccountHelp}
-                aria-controls="sc-login-account-help"
-                onClick={() => setShowAccountHelp((value) => !value)}
-              >
+              <Link to="/forgot-password" className="sc-login-help-toggle">
                 Quên mật khẩu?
-              </button>
+              </Link>
             </div>
             <div className="sc-login-input-wrap">
               <svg className="sc-login-input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -138,11 +131,6 @@ export function LoginPage() {
             {errors.password && <p id="password-error" className="sc-login-field-error" role="alert">{errors.password.message}</p>}
           </div>
 
-          {showAccountHelp && (
-            <div id="sc-login-account-help" className="sc-login-account-help" role="status">
-              {mode === "customer" ? "Vui lòng liên hệ quản trị viên để được hỗ trợ đặt lại mật khẩu. Tính năng lấy lại mật khẩu qua email chưa được hỗ trợ." : "Nếu bạn là nhân viên, hãy liên hệ chủ sân để được đặt lại mật khẩu. Chủ sân và quản trị viên vui lòng liên hệ người quản trị hệ thống để được hỗ trợ."}
-            </div>
-          )}
 
           {serverError && <div className="sc-login-server-error" role="alert">{serverError}</div>}
 

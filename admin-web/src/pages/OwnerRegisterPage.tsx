@@ -8,6 +8,7 @@ import { AuthRoleChoice } from "../auth/AuthRoleChoice";
 import { roleHome, safeReturnTo } from "../auth/authNavigation";
 import type { LoginMode } from "../types/auth";
 import "./OwnerRegisterPage.css";
+import { EmailOtpProof, type EmailProof } from "./EmailOtpProof";
 
 interface OwnerRegisterForm {
   fullName: string;
@@ -28,11 +29,13 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
   const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailProof, setEmailProof] = useState<EmailProof>({email:"",token:""});
   const [registrationSubmitted, setRegistrationSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<OwnerRegisterForm>({
     defaultValues: { fullName: "", email: "", phone: "", password: "", confirmPassword: "" },
@@ -46,6 +49,9 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
 
   const onSubmit = async (values: OwnerRegisterForm) => {
     setServerError(null);
+    if (!emailProof.token || emailProof.email !== values.email.trim().toLowerCase()) {
+      setServerError("Vui lòng nhập email thật và xác minh OTP trước khi đăng ký."); return;
+    }
     setRegistrationSubmitted(true);
     try {
       await (mode === "customer" ? registerCustomer : registerOwner)({
@@ -53,6 +59,7 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
         email: values.email.trim().toLowerCase() || null,
         phone: values.phone.replace(/\s/g, "") || null,
         password: values.password,
+        emailToken: emailProof.token,
       });
     } catch (error) {
       setRegistrationSubmitted(false);
@@ -99,7 +106,7 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
             {errors.fullName && <p id="owner-name-error" className="sc-login-field-error" role="alert">{errors.fullName.message}</p>}
           </div>
 
-          <p id="owner-contact-hint" className="sc-register-hint">Nhập ít nhất một thông tin liên hệ để dùng đăng nhập.</p>
+          <p id="owner-contact-hint" className="sc-register-hint">Email thật và xác minh OTP là bắt buộc. Số điện thoại có thể bổ sung.</p>
           <div className="sc-register-contact-row">
             <div className="sc-login-field">
               <label htmlFor="owner-email">Email</label>
@@ -118,7 +125,7 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
                     deps: ["phone"],
                     validate: (value) => {
                       const email = value.trim();
-                      if (!email) return !!getValues("phone").trim() || "Nhập email hoặc số điện thoại";
+                      if (!email) return "Email là bắt buộc";
                       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || "Email không hợp lệ";
                     },
                     maxLength: { value: 255, message: "Email tối đa 255 ký tự" },
@@ -152,6 +159,7 @@ export function RegisterPage({ initialMode = "customer" }: { initialMode?: Login
             </div>
           </div>
 
+          <EmailOtpProof key={mode + watch("email")} email={watch("email")} purpose={mode === "customer" ? "register" : "register-owner"} onVerified={setEmailProof} />
           <div className="sc-login-field sc-register-password">
             <div className="sc-login-label-row">
               <label htmlFor="owner-password">Mật khẩu</label>

@@ -40,6 +40,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -62,6 +64,8 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var recoveryOpen by remember { mutableStateOf(false) }
+    if (recoveryOpen) PasswordRecoveryDialog(viewModel) { recoveryOpen = false }
 
     LaunchedEffect(state.loggedIn) {
         if (state.loggedIn) onLoggedIn()
@@ -240,6 +244,7 @@ fun LoginScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
+                        TextButton(onClick = { recoveryOpen = true }, enabled = !state.isLoading) { Text("Quên mật khẩu?") }
                         state.errorMessage?.let { message ->
                             Spacer(Modifier.height(12.dp))
                             Text(

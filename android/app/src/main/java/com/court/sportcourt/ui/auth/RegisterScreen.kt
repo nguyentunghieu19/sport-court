@@ -85,7 +85,7 @@ fun RegisterScreen(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Nhập ít nhất một trong hai: email hoặc số điện thoại",
+                "Email thật và xác minh OTP là bắt buộc",
                 style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(12.dp))
@@ -107,6 +107,10 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            TextButton(onClick = { viewModel.emailOtp(false) }, enabled = !state.isLoading) { Text("Gửi / gửi lại OTP email") }
+            OutlinedTextField(value = state.otp, onValueChange = viewModel::onOtpChange, label = { Text("OTP 6 số trong email") }, enabled = !state.isLoading, modifier = Modifier.fillMaxWidth())
+            TextButton(onClick = { viewModel.emailOtp(true) }, enabled = !state.isLoading && state.otp.length == 6) { Text("Xác minh email") }
+            if (state.otpMessage.isNotBlank()) Text(state.otpMessage)
             state.errorMessage?.let { message ->
                 Spacer(Modifier.height(12.dp))
                 Text(message, color = MaterialTheme.colorScheme.error)

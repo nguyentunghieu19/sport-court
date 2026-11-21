@@ -6,6 +6,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import { SystemAdminLayout } from "./layouts/SystemAdminLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { OwnerRegisterPage, RegisterPage } from "./pages/OwnerRegisterPage";
 import { RequireCustomer } from "./auth/RequireCustomer";
 import { CustomerLayout } from "./layouts/CustomerLayout";
@@ -37,6 +38,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register-owner" element={<OwnerRegisterPage />} />
 
