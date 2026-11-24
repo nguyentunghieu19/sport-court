@@ -126,6 +126,13 @@ public class RefundService {
         notification.setMessage("Đơn " + booking.getBookingCode() + ": đã hoàn "
                 + money(refund.getAmount()) + " cho bạn.");
         notificationRepository.save(notification);
+        Notification ownerNotice = new Notification();
+        ownerNotice.setUser(booking.getField().getVenue().getOwner());
+        ownerNotice.setBooking(booking);
+        ownerNotice.setTitle("Đã xác nhận hoàn tiền");
+        ownerNotice.setMessage("Đơn " + booking.getBookingCode() + ": đã xác nhận hoàn "
+                + money(refund.getAmount()) + " cho khách.");
+        notificationRepository.save(ownerNotice);
 
         return toManagerResponse(refund);
     }

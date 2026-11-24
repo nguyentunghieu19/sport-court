@@ -49,6 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityConfig.class, AuthService.class, JwtService.class, GlobalExceptionHandler.class})
 class OwnerRegistrationTest {
     @MockitoBean com.court.backend.service.EmailOtpService emailOtpService;
+    @MockitoBean com.court.backend.service.NotificationService notifications;
     private static final String PASSWORD = "SportCourt123!";
 
     @Autowired MockMvc mvc;

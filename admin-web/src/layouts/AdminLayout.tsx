@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../auth/authContext";
+import { NotificationBell } from "../components/NotificationBell";
 
 type BreadcrumbItem = {
   label: string;
@@ -17,6 +18,7 @@ type AdminOutletContext = {
 };
 
 function getBreadcrumb(pathname: string): BreadcrumbItem[] {
+  if (pathname === "/manage/notifications") return [{ label: "Thông báo" }];
   if (pathname === "/manage") {
     return [{ label: "Trang chủ" }];
   }
@@ -431,14 +433,12 @@ export function AdminLayout() {
                 </span>
               </Link>
 
-              <button
-                type="button"
-                disabled
-                title="Tính năng thông báo sẽ được bổ sung sau."
-                className={
-                  "flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-400 opacity-75 " +
-                  (sidebarCollapsed ? "md:justify-center md:px-2" : "")
-                }
+              <Link
+                to="/manage/notifications"
+                onClick={closeMobileMenu}
+                title="Thông báo"
+                aria-current={location.pathname === "/manage/notifications" ? "page" : undefined}
+                className={navItemClass(location.pathname === "/manage/notifications")}
               >
                 <svg
                   className="h-5 w-5 shrink-0"
@@ -456,15 +456,7 @@ export function AdminLayout() {
                 >
                   Thông báo
                 </span>
-                <span
-                  className={
-                    "rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500 " +
-                    (sidebarCollapsed ? "md:hidden" : "")
-                  }
-                >
-                  Sắp có
-                </span>
-              </button>
+              </Link>
             </div>
           </section>
         </nav>
@@ -576,6 +568,7 @@ export function AdminLayout() {
 
             {/* Hồ sơ và đăng xuất giữ ở góc trên bên phải */}
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <NotificationBell to="/manage/notifications" />
               <Link
                 to="/profile"
                 onClick={closeMobileMenu}

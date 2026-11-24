@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -28,7 +29,14 @@ private val LightColorScheme = lightColorScheme(
     onSurface = GreenOnSurface,
     surfaceVariant = GreenSurfaceVariant,
     onSurfaceVariant = GreenOnSurfaceVariant,
-    outline = GreenOutline
+    outline = GreenOutline,
+    outlineVariant = Color(0xFFE5E7EB),
+    surfaceTint = GreenSurface,
+    surfaceContainerLowest = GreenSurface,
+    surfaceContainerLow = Color(0xFFF9FAFB),
+    surfaceContainer = Color(0xFFF3F4F6),
+    surfaceContainerHigh = Color(0xFFEDEEF0),
+    surfaceContainerHighest = Color(0xFFE5E7EB)
 )
 
 private val DarkColorScheme = darkColorScheme(

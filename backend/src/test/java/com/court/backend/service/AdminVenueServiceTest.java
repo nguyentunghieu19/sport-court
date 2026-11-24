@@ -26,7 +26,7 @@ class AdminVenueServiceTest {
     venues = mock(VenueRepository.class);
     fields = mock(SportsFieldRepository.class);
     access = mock(AdminAccessService.class);
-    service = new AdminVenueService(venues, fields, access);
+    service = new AdminVenueService(venues, fields, access, mock(NotificationService.class));
     actor = AdminAccountServiceTest.user(1L, UserRole.ADMIN);
     venue = new Venue();
     venue.setId(7L);

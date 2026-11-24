@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { useAuth } from "../auth/authContext";
+import { NotificationBell } from "../components/NotificationBell";
 
 const NAVIGATION = [
   { to: "/admin", title: "Tổng quan hệ thống", index: "01", end: true },
   { to: "/admin/accounts", title: "Quản lý tài khoản", index: "02", end: false },
   { to: "/admin/venues", title: "Quản lý địa điểm", index: "03", end: false },
+  { to: "/admin/notifications", title: "Thông báo", index: "04", end: false },
 ];
 
 export function SystemAdminLayout() {
@@ -30,7 +32,7 @@ export function SystemAdminLayout() {
       <div className="md:pl-64">
         <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-8">
           <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Mở menu quản trị" aria-expanded={menuOpen} className="rounded-lg border border-slate-200 p-2 md:hidden">☰</button><div><p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Quản trị hệ thống</p><p className="mt-1 text-sm font-semibold">{pageTitle}</p></div></div>
-          <div className="flex items-center gap-3"><span className="hidden text-right sm:block"><span className="block text-sm font-semibold">{session?.fullName}</span><span className="text-[10px] font-bold tracking-wider text-emerald-700">ADMIN</span></span><button type="button" onClick={logout} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Đăng xuất</button></div>
+          <div className="flex items-center gap-3"><NotificationBell to="/admin/notifications" /><span className="hidden text-right sm:block"><span className="block text-sm font-semibold">{session?.fullName}</span><span className="text-[10px] font-bold tracking-wider text-emerald-700">ADMIN</span></span><button type="button" onClick={logout} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Đăng xuất</button></div>
         </header>
         <main className="mx-auto max-w-7xl p-4 sm:p-8"><Outlet /></main>
       </div>

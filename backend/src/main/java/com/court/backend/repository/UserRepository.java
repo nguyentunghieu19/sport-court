@@ -13,6 +13,7 @@ import com.court.backend.enums.UserRole;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
+    List<User> findByRoleAndActiveTrueAndDeletedAtIsNull(UserRole role);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.role = :role and u.active = true and u.deletedAt is null order by u.id")

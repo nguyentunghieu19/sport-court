@@ -73,6 +73,7 @@ public class BookingService {
     private final FieldBlockRepository fieldBlockRepository;
     private final BookingPolicyRepository bookingPolicyRepository;
     private final PricingService pricingService;
+    private final NotificationService notifications;
 
     @Transactional
     public BookingResponse create(Long userId, CreateBookingRequest request) {
@@ -159,6 +160,9 @@ public class BookingService {
             throw new ApiException(HttpStatus.CONFLICT,
                     "Khung giờ vừa có người khác đặt, vui lòng chọn khung giờ khác");
         }
+        notifications.send(booking.getField().getVenue().getOwner(), booking, "Có yêu cầu đặt sân mới",
+                "Khách " + user.getFullName() + " vừa tạo đơn " + booking.getBookingCode()
+                + " cho sân " + field.getName() + ". Đơn đang chờ thanh toán.");
         return BookingResponse.from(booking);
     }
 

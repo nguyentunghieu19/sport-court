@@ -73,7 +73,8 @@ class AdminVenueVisibilityTest {
             mock(FieldPriceRuleRepository.class),
             mock(FieldBlockRepository.class),
             mock(BookingPolicyRepository.class),
-            mock(PricingService.class));
+            mock(PricingService.class),
+            mock(NotificationService.class));
     var request =
         new CreateBookingRequest(
             9L, LocalDate.now().plusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), null);

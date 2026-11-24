@@ -215,6 +215,13 @@ public class PaymentService {
         notification.setMessage("Đơn " + booking.getBookingCode() + " đã được xác nhận. Số tiền đã thanh toán: "
                 + payment.getAmount().toBigInteger() + " đ");
         notificationRepository.save(notification);
+        Notification ownerNotice = new Notification();
+        ownerNotice.setUser(booking.getField().getVenue().getOwner());
+        ownerNotice.setBooking(booking);
+        ownerNotice.setTitle("Đơn đặt sân đã thanh toán");
+        ownerNotice.setMessage("Đơn " + booking.getBookingCode() + " đã xác nhận thanh toán "
+                + payment.getAmount().toBigInteger() + " đ. Kiểm tra lịch để chuẩn bị đón khách.");
+        notificationRepository.save(ownerNotice);
     }
 
     private void createRefundRequest(Payment payment, String reason) {
@@ -224,6 +231,13 @@ public class PaymentService {
         refund.setReason(reason);
         refund.setStatus(RefundStatus.PENDING);
         refundRepository.save(refund);
+        Notification notice = new Notification();
+        notice.setUser(payment.getBooking().getField().getVenue().getOwner());
+        notice.setBooking(payment.getBooking());
+        notice.setTitle("Có giao dịch cần hoàn tiền");
+        notice.setMessage("Đơn " + payment.getBooking().getBookingCode() + ": " + reason
+                + ". Vui lòng kiểm tra mục Hoàn tiền.");
+        notificationRepository.save(notice);
     }
 
     private Long parseLong(String value) {

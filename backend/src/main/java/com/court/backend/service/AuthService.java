@@ -26,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailOtpService emailOtpService;
+    private final NotificationService notifications;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -64,6 +65,11 @@ public class AuthService {
         user.setRole(role);
         user.setEmailVerified(true);
         user = userRepository.save(user);
+
+        if (role == UserRole.OWNER) {
+            notifications.notifyAdmins("Chủ sân mới đăng ký",
+                    "Chủ sân " + user.getFullName() + " (" + email + ") vừa tạo tài khoản.");
+        }
 
         return buildResponse(user);
     }

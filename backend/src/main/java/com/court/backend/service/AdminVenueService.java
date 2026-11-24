@@ -22,6 +22,7 @@ public class AdminVenueService {
   private final VenueRepository venues;
   private final SportsFieldRepository fields;
   private final AdminAccessService access;
+  private final NotificationService notifications;
 
   @Transactional(readOnly = true)
   public PageResponse<AdminVenueResponse> list(
@@ -74,11 +75,15 @@ public class AdminVenueService {
     String reason = r.reason() == null ? null : r.reason().trim();
     if (r.hidden() && (reason == null || reason.isBlank()))
       throw new ApiException(HttpStatus.BAD_REQUEST, "Cần nhập lý do tạm ẩn địa điểm");
+    boolean changed = v.isAdminHidden() != r.hidden();
     v.setAdminHidden(r.hidden());
     v.setAdminHiddenReason(r.hidden() ? reason : null);
     v.setAdminHiddenAt(r.hidden() ? Instant.now() : null);
     v.setAdminHiddenBy(r.hidden() ? admin : null);
     venues.saveAndFlush(v);
+    if (changed) notifications.send(v.getOwner(), null,
+        r.hidden() ? "Địa điểm đã bị tạm ẩn" : "Địa điểm đã được hiển thị lại",
+        "Địa điểm " + v.getName() + (r.hidden() ? " bị admin tạm ẩn. Lý do: " + reason : " đã được admin hiển thị lại."));
     return response(v);
   }
 

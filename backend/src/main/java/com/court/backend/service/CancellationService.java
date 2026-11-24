@@ -337,6 +337,11 @@ public class CancellationService {
             customerMessage += " Theo chính sách, số tiền đã thanh toán không được hoàn lại.";
         }
         saveNotification(customer, booking, "Đã hủy đơn đặt sân", customerMessage);
+        if (evaluation.refund().signum() == 0) {
+            saveNotification(booking.getField().getVenue().getOwner(), booking,
+                    "Khách đã hủy đơn đặt sân", "Khách " + customer.getFullName()
+                    + " đã hủy đơn " + booking.getBookingCode() + ". Khung giờ đã được giải phóng.");
+        }
 
         // Báo cho chủ sân khi có tiền cần hoàn để kịp liên hệ khách
         if (evaluation.refund().signum() > 0) {

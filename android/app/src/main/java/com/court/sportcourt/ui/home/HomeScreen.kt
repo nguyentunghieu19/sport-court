@@ -197,7 +197,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFE2F1E7))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when (uiState.currentTab) {
                 HomeTab.HOME -> HomeContentView(
@@ -677,8 +677,11 @@ private fun VenueCard(
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
     ) {
         Column {
             CustomerVenueImage(
@@ -694,7 +697,7 @@ private fun VenueCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
+                        color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         CustomerIcon(CustomerIconKind.COURT, modifier = Modifier.padding(12.dp).size(28.dp))
                     }
@@ -784,7 +787,7 @@ private fun VenueCard(
                     )
 
                     Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(

@@ -23,6 +23,7 @@ public class VenueService {
     private final VenueRepository venueRepository;
     private final BookingPolicyRepository bookingPolicyRepository;
     private final OwnerAccessService ownerAccessService;
+    private final NotificationService notifications;
 
     @Transactional
     public VenueResponse create(Long ownerId, VenueRequest request) {
@@ -38,6 +39,9 @@ public class VenueService {
         BookingPolicy policy = new BookingPolicy();
         policy.setVenue(venue);
         bookingPolicyRepository.save(policy);
+
+        notifications.notifyAdmins("Địa điểm mới được tạo",
+                "Chủ sân " + owner.getFullName() + " vừa tạo địa điểm " + venue.getName() + ".");
 
         return VenueResponse.from(venue);
     }

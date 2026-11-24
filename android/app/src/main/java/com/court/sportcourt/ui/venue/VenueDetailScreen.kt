@@ -122,9 +122,10 @@ fun VenueDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFECFDF5)
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(18.dp)
                 ) {
@@ -232,9 +233,10 @@ fun VenueDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFECFDF5)
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    border = BorderStroke(1.5.dp, Color(0xFFA7F3D0)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(18.dp)
                 ) {
@@ -323,12 +325,13 @@ private fun FieldItemCard(
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.5.dp, if (isMaintenance) Color(0xFFFECDD3) else Color(0xFFA7F3D0)),
+        border = BorderStroke(1.dp, if (isMaintenance) Color(0xFFFECDD3) else MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
             containerColor = if (isMaintenance)
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
             else
-                Color(0xFFECFDF5)
+                MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {

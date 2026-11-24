@@ -40,7 +40,7 @@ fun CustomerVenueImage(
     Box(
         modifier = modifier
             .clipToBounds()
-            .background(MaterialTheme.colorScheme.primaryContainer),
+            .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center
     ) {
         if (url == null) {
@@ -78,7 +78,7 @@ fun CustomerVenueImage(
 @Composable
 private fun VenueImagePlaceholder(message: String, loading: Boolean = false) {
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer).padding(16.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)
     ) {
@@ -94,7 +94,7 @@ private fun VenueImagePlaceholder(message: String, loading: Boolean = false) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }

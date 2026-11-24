@@ -7,6 +7,7 @@ import { SystemAdminLayout } from "./layouts/SystemAdminLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ManagementNotificationsPage } from "./pages/ManagementNotificationsPage";
 import { OwnerRegisterPage, RegisterPage } from "./pages/OwnerRegisterPage";
 import { RequireCustomer } from "./auth/RequireCustomer";
 import { CustomerLayout } from "./layouts/CustomerLayout";
@@ -59,6 +60,7 @@ function App() {
       <Route element={<RequireSystemAdmin />}>
         <Route path="admin" element={<SystemAdminLayout />}>
           <Route index element={<SystemOverviewPage />} />
+          <Route path="notifications" element={<ManagementNotificationsPage />} />
           <Route path="accounts" element={<AdminAccountsPage />} />
           <Route path="venues" element={<AdminVenuesPage />} />
           <Route path="venues/:id" element={<AdminVenueDetailPage />} />
@@ -69,6 +71,7 @@ function App() {
         <Route element={<RequireOperations />}>
           <Route element={<AdminLayout />}>
             <Route path="manage" element={<DashboardPage />} />
+            <Route path="manage/notifications" element={<ManagementNotificationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="statistics" element={<StatisticsPage />} />
             {/* Các trang dành riêng cho OWNER */}
